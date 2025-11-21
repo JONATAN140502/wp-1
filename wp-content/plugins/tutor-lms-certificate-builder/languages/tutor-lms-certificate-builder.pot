@@ -1,0 +1,803 @@
+# Copyright (C) 2025 Themeum
+# This file is distributed under the same license as the Tutor LMS Certificate Builder plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: Tutor LMS Certificate Builder 1.3.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/tutor-lms-certificate-builder\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2025-10-21T06:26:58+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: tutor-lms-certificate-builder\n"
+
+#. Plugin Name of the plugin
+#: tutor-lms-certificate-builder.php
+msgid "Tutor LMS Certificate Builder"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: tutor-lms-certificate-builder.php
+msgid "https://tutorlms.com/certificate-builder/"
+msgstr ""
+
+#. Description of the plugin
+#: tutor-lms-certificate-builder.php
+msgid "Tutor Drag and Drop Certificate Builder"
+msgstr ""
+
+#. Author of the plugin
+#: tutor-lms-certificate-builder.php
+msgid "Themeum"
+msgstr ""
+
+#. Author URI of the plugin
+#: tutor-lms-certificate-builder.php
+msgid "https://themeum.com/"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/Ajax.php:90
+#: src/Ajax.php:90
+msgid "Permission Denied"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/Ajax.php:154
+#: src/Ajax.php:154
+msgctxt "course-duration"
+msgid "hrs"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/Ajax.php:155
+#: src/Ajax.php:155
+msgctxt "course-duration"
+msgid "min"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/Ajax.php:156
+#: src/Ajax.php:156
+msgctxt "course-duration"
+msgid "sec"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/Ajax.php:213
+#: build/tutor-lms-certificate-builder/src/Ajax.php:293
+#: build/tutor-lms-certificate-builder/src/Ajax.php:369
+#: src/Ajax.php:213
+#: src/Ajax.php:293
+#: src/Ajax.php:369
+msgid "Bad Request sent. Please try again."
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/Ajax.php:264
+#: src/Ajax.php:264
+msgid "Certificate Data Updated Successfully"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/Ajax.php:268
+#: src/Ajax.php:268
+msgid "Something was wrong. Please try again."
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/Ajax.php:305
+#: src/Ajax.php:305
+msgid "Certificate data found."
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/Ajax.php:308
+#: src/Ajax.php:308
+msgid "No certificate data found."
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/Ajax.php:329
+#: src/Ajax.php:329
+msgid "Could not save preview due to invalid image."
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/Core.php:41
+#: build/tutor-lms-certificate-builder/src/Core.php:43
+#: build/tutor-lms-certificate-builder/src/Core.php:50
+#: src/Core.php:41
+#: src/Core.php:43
+#: src/Core.php:50
+msgid "Certificates"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/Core.php:42
+#: build/tutor-lms-certificate-builder/src/Core.php:44
+#: src/Core.php:42
+#: src/Core.php:44
+msgid "Certificate"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/Core.php:45
+#: build/tutor-lms-certificate-builder/src/Core.php:46
+#: src/Core.php:45
+#: src/Core.php:46
+msgid "Add New Certificate"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/Core.php:47
+#: src/Core.php:47
+msgid "New Certificate"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/Core.php:48
+#: src/Core.php:48
+msgid "Edit Certificate"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/Core.php:49
+#: src/Core.php:49
+msgid "View Certificate"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/Core.php:51
+#: src/Core.php:51
+msgid "Search Certificates"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/Core.php:52
+#: src/Core.php:52
+msgid "Parent Certificates:"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/Core.php:53
+#: src/Core.php:53
+msgid "No Certificates found."
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/Core.php:54
+#: src/Core.php:54
+msgid "No Certificates found in Trash."
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/Core.php:59
+#: src/Core.php:59
+msgid "Description."
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/Editor.php:155
+#: src/Editor.php:155
+msgid "Untitled Template"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/ProIntegration.php:109
+#: build/tutor-lms-certificate-builder/templates/certificate-list-table.php:20
+#: src/ProIntegration.php:109
+#: templates/certificate-list-table.php:20
+msgid "All Certificates"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/ProIntegration.php:132
+#: src/ProIntegration.php:132
+msgid "Allow Instructors to Use Templates Created by the Admin"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/ProIntegration.php:135
+#: src/ProIntegration.php:135
+msgid "Enable instructors to use certificate templates built by admin. If disabled, instructors will be able to use only their own templates."
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/ProIntegration.php:140
+#: src/ProIntegration.php:140
+msgid "Disable Certificate Creation for Instructors"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/ProIntegration.php:143
+#: src/ProIntegration.php:143
+msgid "When enabled, instructors will not have the ability to create or customize certificates for their courses."
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/ProIntegration.php:148
+#: src/ProIntegration.php:148
+msgid "Hide Default Certificate Templates for Instructors"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/src/ProIntegration.php:151
+#: src/ProIntegration.php:151
+msgid "When enabled, default certificate templates will be hidden from instructors."
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/templates/add-certificate-area.php:5
+#: templates/add-certificate-area.php:5
+msgid "Create Your Certificate"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/templates/add-certificate-area.php:6
+#: templates/add-certificate-area.php:6
+msgid "In 3 Steps"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/templates/add-certificate-area.php:9
+#: templates/add-certificate-area.php:9
+msgid "Select your favorite design"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/templates/add-certificate-area.php:10
+#: templates/add-certificate-area.php:10
+msgid "Type in your text &amp; upload your signature"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/templates/add-certificate-area.php:20
+#: build/tutor-lms-certificate-builder/templates/add-certificate-area.php:39
+#: templates/add-certificate-area.php:20
+#: templates/add-certificate-area.php:39
+msgid "Create certificate"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/templates/add-certificate-area.php:30
+#: templates/add-certificate-area.php:30
+msgid "Create Your Certificate In 3 Steps"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/templates/add-certificate-area.php:33
+#: templates/add-certificate-area.php:33
+msgid "Add instructor, Benefits , Requirements/Instructions, Targeted Audience, Materials Included"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/templates/certificate-list-table.php:32
+#: templates/certificate-list-table.php:32
+#: assets/editor/dist/main.min.js:1
+msgid "A4"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/templates/certificate-list-table.php:32
+#: templates/certificate-list-table.php:32
+#: assets/editor/dist/main.min.js:1
+msgid "Letter"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/templates/certificate-list-table.php:44
+#: templates/certificate-list-table.php:44
+msgid "Size:"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/templates/certificate-list-table.php:51
+#: templates/certificate-list-table.php:51
+msgid "Set certificate template status"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/templates/certificate-list-table.php:53
+#: templates/certificate-list-table.php:53
+msgid "Draft"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/templates/certificate-list-table.php:56
+#: templates/certificate-list-table.php:56
+msgid "Published"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/templates/certificate-list-table.php:82
+#: templates/certificate-list-table.php:82
+msgid "Do You Want to Delete This Certificate?"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/templates/certificate-list-table.php:83
+#: templates/certificate-list-table.php:83
+msgid "Are you sure you want to delete this certificate permanently from the site? Please confirm your choice."
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/templates/certificate-list-table.php:85
+#: templates/certificate-list-table.php:85
+msgid "Yes, Delete This"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/templates/certificate-list-table.php:117
+#: templates/certificate-list-table.php:117
+msgid "No certificate!"
+msgstr ""
+
+#: build/tutor-lms-certificate-builder/templates/editor.php:26
+#: templates/editor.php:26
+msgid "Certificate Builder"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Sorry, you are not allowed to access this page."
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Category"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Clear"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Choose a Template"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+msgid "Landscape"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+msgid "Portrait"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+msgid "Search..."
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Create your own"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+msgid "Use this template"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+msgid "Preview now"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Change color format"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+msgid "Copy"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+msgid "Paste"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Delete"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Bring Forward"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Bring to Front"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Send Backward"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Send to Back"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Color"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Pattern"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+msgid "View all"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+msgid "Background"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Patterns"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Please Enable Course Bundle Addon"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Please Enable Gradebook Addon"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Templates"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Elements"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Media"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Library"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Backdrops"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Layer"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Info"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+msgid "Settings"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Help Center"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Design a Certificate"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Choose any template to get started. Hover over your preferred template and click on Use This Template."
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Add elements like Course name, Student name, Instructor name, Verification ID, and more from the Elements tab according to your needs. These are dynamic and will be automatically derived from the course you’re creating the certificate for."
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Click on any elements and edit them inline. Choose from 1000+ Google Fonts, customize font weights, font size, type spacing, line height, and more."
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Upload images, logos, or use images from Unsplash from the media tab. Comes with drag & drop along with the inline editing option."
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Take different shapes, illustrations, badges, borders, frames, and watermarks from the Library tab and edit them your way"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Publish Created Certificate"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Once you have completed the certificate design, hit the Publish button at the top right corner."
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Assign Created Certificate to a Course"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Go to the front-end editor of the course to which you want to add the certificate. "
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Scroll down to the Certificate Template section, and you’ll see all the published certificate templates."
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Select the certificate that you have just published, and hit Publish Course/Update Course."
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Recommended Resources"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "  Tutor LMS Certificate Builder Documentation"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Unknown"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+msgid "Upload File"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "My Files"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Unsplash"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Invalid file type. Only jpeg and png images are supported"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "No photos found!"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+msgid "Photo"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Choose Size"
+msgstr ""
+
+#. translators: %1$d: width in pixels, %2$d: height in pixels
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+#, js-format
+msgid "(%1$dpx X %2$dpx)"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Save Settings"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Shape"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Illustration"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Badge"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Border"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Frames"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Watermarks"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "back"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Are you sure you want to move to a different template? All of your modifications on the current one will be lost."
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Professional"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Creatives"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Kids"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Achievement"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Minimal"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Musical"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "University"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+msgid "Flip Vertical"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+msgid "Flip Horizontal"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+msgid "Position"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+msgid "Transparency"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Upload"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Replace"
+msgstr ""
+
+#. translators: 1: opening <strong> tag, 2: closing </strong> tag
+#: assets/editor/dist/main.min.js:1
+#, js-format
+msgid "%1$sCertificate%2$s Builder"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Preview"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Updating..."
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+msgid "Publish"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+msgid "Loading..."
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Successful"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Failed"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Font Weight"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Font Size"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Type Spacing"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Line Height"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Bold"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Italic"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Underline"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Align"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Search font"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Not Found"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+#: assets/editor/dist/main.min.js:1
+msgid "pass element name"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "300"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "200"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "150"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "100"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "50"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "40"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Zoom to Fit"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Reset"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Bundle Courses"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Course"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Duration"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Grade"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Text"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Instructor"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Point"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "QR Code"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "QR"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Signature"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Upload your signature"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Student Name"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Time"
+msgstr ""
+
+#: assets/editor/dist/main.min.js:1
+msgid "Verification ID"
+msgstr ""

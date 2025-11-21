@@ -1,0 +1,131 @@
+{
+    "exportId": "68dfaeb9cd1e01.03160013",
+    "batch_id": "workademy",
+    "template_info": {
+        "symbols": 4,
+        "popups": 1,
+        "pages": 17,
+        "templates": 5,
+        "utilityPages": 5,
+        "variables": 2,
+        "images": 0,
+        "fonts": 2,
+        "contentManager": 0,
+        "contentManagerRefFields": 0,
+        "contentManager_list": []
+    },
+    "pages": [
+        {
+            "post_title": "Membership Pricing",
+            "post_name": "membership-pricing"
+        },
+        {
+            "post_title": "Tutor Login",
+            "post_name": "tutor-login"
+        },
+        {
+            "post_title": "Tutor Certificate",
+            "post_name": "tutor-certificate"
+        },
+        {
+            "post_title": "Privacy Policy",
+            "post_name": "privacy-policy"
+        },
+        {
+            "post_title": "Terms & Conditions",
+            "post_name": "terms-conditions"
+        },
+        {
+            "post_title": "FAQ",
+            "post_name": "faq"
+        },
+        {
+            "post_title": "Contact",
+            "post_name": "contact"
+        },
+        {
+            "post_title": "Instructors",
+            "post_name": "instructors"
+        },
+        {
+            "post_title": "Testimonials",
+            "post_name": "testimonials"
+        },
+        {
+            "post_title": "Blogs",
+            "post_name": "blogs"
+        },
+        {
+            "post_title": "About",
+            "post_name": "about"
+        },
+        {
+            "post_title": "Home",
+            "post_name": "workademy"
+        },
+        {
+            "post_title": "Checkout",
+            "post_name": "checkout"
+        },
+        {
+            "post_title": "Cart",
+            "post_name": "cart"
+        },
+        {
+            "post_title": "Instructor Registration",
+            "post_name": "instructor-registration"
+        },
+        {
+            "post_title": "Student Registration",
+            "post_name": "student-registration"
+        },
+        {
+            "post_title": "Dashboard",
+            "post_name": "dashboard"
+        }
+    ],
+    "templates": [
+        {
+            "post_title": "Blogs Archive",
+            "post_name": "posts-archive"
+        },
+        {
+            "post_title": "Course Categories",
+            "post_name": "courses"
+        },
+        {
+            "post_title": "Instructor",
+            "post_name": "instructor"
+        },
+        {
+            "post_title": "Blog Details",
+            "post_name": "posts-single"
+        },
+        {
+            "post_title": "Course Details",
+            "post_name": "course"
+        }
+    ],
+    "utility_pages": [
+        {
+            "post_title": "Membership",
+            "post_name": "membership"
+        },
+        {
+            "post_title": "404",
+            "post_name": "404"
+        },
+        {
+            "post_title": "Login",
+            "post_name": "login"
+        },
+        {
+            "post_title": "Registration",
+            "post_name": "registration"
+        },
+        {
+            "post_title": "Courses",
+            "post_name": "courses"
+        }
+    ]
+}
