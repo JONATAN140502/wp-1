@@ -82,45 +82,6 @@ class Editor {
 			TUTOR_CB_VERSION
 		);
 
-		// Definir elementos disponibles para el constructor
-		$elements = array(
-			'STUDENT_NAME' => array(
-				'type'     => 'text',
-				'label'    => __( 'Student Name', 'tutor-lms-certificate-builder' ),
-				'value'    => '{STUDENT_NAME}',
-				'field'    => 'STUDENT_NAME',
-				'category' => 'user',
-				'variable' => 'STUDENT_NAME',
-			),
-			'STUDENT_DNI' => array(
-				'type'     => 'text',
-				'label'    => __( 'DNI del Usuario', 'tutor-lms-certificate-builder' ),
-				'value'    => '{STUDENT_DNI}',
-				'field'    => 'STUDENT_DNI',
-				'category' => 'user',
-				'variable' => 'STUDENT_DNI',
-			),
-			'COURSE_TITLE' => array(
-				'type'     => 'text',
-				'label'    => __( 'Course Title', 'tutor-lms-certificate-builder' ),
-				'value'    => '{COURSE_TITLE}',
-				'field'    => 'COURSE_TITLE',
-				'category' => 'course',
-				'variable' => 'COURSE_TITLE',
-			),
-			'INSTRUCTOR_NAME' => array(
-				'type'     => 'text',
-				'label'    => __( 'Instructor Name', 'tutor-lms-certificate-builder' ),
-				'value'    => '{INSTRUCTOR_NAME}',
-				'field'    => 'INSTRUCTOR_NAME',
-				'category' => 'user',
-				'variable' => 'INSTRUCTOR_NAME',
-			),
-		);
-
-		// Permitir que otros plugins filtren los elementos
-		$elements = apply_filters( 'tutor_certificate_builder_elements', $elements );
-
 		// Localize the script with data.
 		wp_localize_script(
 			'tutor-lms-certificate-builder-editor-script',
@@ -135,7 +96,6 @@ class Editor {
 				'tutor_certificate' => $post,
 				'tutor_nonce'       => wp_create_nonce( tutor()->nonce_action ),
 				'tutor_nonce_key'   => tutor()->nonce,
-				'elements'          => $elements,
 			)
 		);
 

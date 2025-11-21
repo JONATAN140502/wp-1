@@ -165,20 +165,10 @@ class Ajax {
 			}
 		}
 
-		// Obtener DNI del estudiante
-		$student_dni = '';
-		if ( $student && $student->ID ) {
-			$student_dni = get_user_meta( $student->ID, '_tutor_user_dni', true );
-			if ( empty( $student_dni ) ) {
-				$student_dni = get_user_meta( $student->ID, 'dni', true );
-			}
-		}
-
 		wp_send_json_success(
 			array(
 				'COURSE_TITLE'    => $course->post_title,
 				'STUDENT_NAME'    => $this->get_user_name( $student ),
-				'STUDENT_DNI'     => $student_dni ? $student_dni : '',
 				'INSTRUCTOR_NAME' => $this->get_user_name( $instructor ),
 				'VERIFICATION_ID' => $cert_hash,
 				'POINT'           => $grade['gradepoint'],
