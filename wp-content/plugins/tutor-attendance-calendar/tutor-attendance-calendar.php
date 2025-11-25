@@ -307,8 +307,16 @@ class Tutor_Attendance_Calendar {
 		$date_to = isset( $_GET['date_to'] ) ? sanitize_text_field( $_GET['date_to'] ) : date( 'Y-m-d' );
 		$status_filter = isset( $_GET['status'] ) ? sanitize_text_field( $_GET['status'] ) : '';
 
-		// Obtener datos
-		$attendance_data = $this->get_attendance_summary( $course_id, $instructor_id, $date_from, $date_to, $status_filter );
+		// Paginación
+		$per_page = 20; // Registros por página
+		$current_page = isset( $_GET['paged'] ) ? max( 1, intval( $_GET['paged'] ) ) : 1;
+		$offset = ( $current_page - 1 ) * $per_page;
+
+		// Obtener datos con paginación
+		$attendance_data = $this->get_attendance_summary( $course_id, $instructor_id, $date_from, $date_to, $status_filter, $per_page, $offset );
+		$total_count = $this->get_attendance_summary_count( $course_id, $instructor_id, $date_from, $date_to, $status_filter );
+		$total_pages = ceil( $total_count / $per_page );
+		
 		$courses = $this->get_all_courses();
 		$instructors = $this->get_all_instructors();
 
@@ -329,14 +337,13 @@ class Tutor_Attendance_Calendar {
 		}
 
 		// Verificar si se solicita exportación a Excel - DEBE ser lo primero que se verifique
-		if ( isset( $_POST['export_excel'] ) || ( isset( $_GET['export'] ) && $_GET['export'] === 'excel' ) ) {
+		// Esto es un backup por si las funciones de interceptación no funcionaron
+		if ( isset( $_GET['page'] ) && $_GET['page'] === 'tutor-attendance-summary' && 
+			( isset( $_POST['export_excel'] ) || ( isset( $_GET['export'] ) && $_GET['export'] === 'excel' ) ) ) {
 			// Limpiar cualquier output previo antes de exportar
-			if ( ob_get_level() ) {
-				ob_end_clean();
-			}
+			$this->clean_all_output_buffers();
 			$this->export_attendance_to_excel();
-			// No debería llegar aquí, pero por si acaso
-			return;
+			exit; // Salir inmediatamente después de exportar
 		}
 
 		// Determinar si estamos en frontend
@@ -513,13 +520,72 @@ class Tutor_Attendance_Calendar {
 	public function add_attendance_tab( $nav_items ) {
 		$user_id = get_current_user_id();
 		
-		// Solo agregar para estudiantes
-		if ( function_exists( 'tutor_utils' ) && tutor_utils()->is_student( $user_id ) ) {
-			$nav_items['attendance'] = array(
-				'title' => __( 'Mi Asistencia', 'tutor-attendance-calendar' ),
-				'icon' => 'tutor-icon-calender',
-				'type' => 'default',
-			);
+		if ( ! $user_id ) {
+			return $nav_items;
+		}
+		
+		// No mostrar para instructores ni administradores
+		if ( current_user_can( 'tutor_instructor' ) || current_user_can( 'administrator' ) ) {
+			return $nav_items;
+		}
+		
+		// Mostrar para todos los demás usuarios (estudiantes, suscriptores, etc.)
+		// Verificar si es estudiante de Tutor LMS o tiene rol de suscriptor
+		$is_student = false;
+		$user = wp_get_current_user();
+		
+		if ( $user ) {
+			// Verificar si es estudiante de Tutor LMS
+			if ( function_exists( 'tutor_utils' ) ) {
+				$is_student = tutor_utils()->is_student( $user_id );
+			}
+			
+			// También incluir usuarios con rol de suscriptor
+			if ( ! $is_student && in_array( 'subscriber', (array) $user->roles ) ) {
+				$is_student = true;
+			}
+			
+			// Si no es estudiante ni suscriptor, verificar si tiene acceso al dashboard de Tutor LMS
+			// (esto cubre casos donde el usuario puede acceder al dashboard pero no está marcado como estudiante)
+			if ( ! $is_student && function_exists( 'tutor_utils' ) ) {
+				$dashboard_page_id = tutor_utils()->get_option( 'tutor_dashboard_page_id' );
+				if ( $dashboard_page_id ) {
+					// Si puede acceder al dashboard, asumir que es estudiante
+					$is_student = true;
+				}
+			}
+		}
+		
+		// Agregar el menú si es estudiante
+		if ( $is_student ) {
+			// Insertar después de "enrolled-courses" si existe, sino después de "my-profile"
+			$new_items = array();
+			$added = false;
+			
+			foreach ( $nav_items as $key => $item ) {
+				$new_items[ $key ] = $item;
+				
+				// Agregar después de enrolled-courses o my-profile
+				if ( ! $added && ( $key === 'enrolled-courses' || $key === 'my-profile' ) ) {
+					$new_items['attendance'] = array(
+						'title' => __( 'Mi Asistencia', 'tutor-attendance-calendar' ),
+						'icon' => 'tutor-icon-calender',
+						'type' => 'default',
+					);
+					$added = true;
+				}
+			}
+			
+			// Si no se pudo insertar en posición específica, agregar al final antes de los separadores
+			if ( ! $added ) {
+				$new_items['attendance'] = array(
+					'title' => __( 'Mi Asistencia', 'tutor-attendance-calendar' ),
+					'icon' => 'tutor-icon-calender',
+					'type' => 'default',
+				);
+			}
+			
+			return $new_items;
 		}
 		
 		return $nav_items;
@@ -924,7 +990,51 @@ class Tutor_Attendance_Calendar {
 	/**
 	 * Obtener asistencias del estudiante
 	 */
-	public function get_student_attendance( $student_id, $course_id = 0, $date_from = '', $date_to = '' ) {
+	public function get_student_attendance( $student_id, $course_id = 0, $date_from = '', $date_to = '', $per_page = -1, $offset = 0 ) {
+		global $wpdb;
+
+		$where = array( 'student_id = %d' );
+		$where_values = array( $student_id );
+
+		if ( $course_id > 0 ) {
+			$where[] = 'course_id = %d';
+			$where_values[] = $course_id;
+		}
+
+		if ( ! empty( $date_from ) ) {
+			$where[] = 'attendance_date >= %s';
+			$where_values[] = $date_from;
+		}
+
+		if ( ! empty( $date_to ) ) {
+			$where[] = 'attendance_date <= %s';
+			$where_values[] = $date_to;
+		}
+
+		$where_clause = implode( ' AND ', $where );
+
+		// Construir la consulta base
+		$query = "SELECT * FROM {$this->table_name} 
+			WHERE {$where_clause} 
+			ORDER BY attendance_date DESC";
+		
+		// Agregar LIMIT si se especifica
+		if ( $per_page > 0 ) {
+			$where_values[] = $per_page;
+			$where_values[] = $offset;
+			$query .= " LIMIT %d OFFSET %d";
+		}
+
+		// Preparar la consulta con los valores
+		$query = $wpdb->prepare( $query, $where_values );
+
+		return $wpdb->get_results( $query );
+	}
+
+	/**
+	 * Obtener el conteo total de asistencias del estudiante
+	 */
+	public function get_student_attendance_count( $student_id, $course_id = 0, $date_from = '', $date_to = '' ) {
 		global $wpdb;
 
 		$where = array( 'student_id = %d' );
@@ -948,13 +1058,12 @@ class Tutor_Attendance_Calendar {
 		$where_clause = implode( ' AND ', $where );
 
 		$query = $wpdb->prepare(
-			"SELECT * FROM {$this->table_name} 
-			WHERE {$where_clause} 
-			ORDER BY attendance_date DESC",
+			"SELECT COUNT(*) FROM {$this->table_name} 
+			WHERE {$where_clause}",
 			$where_values
 		);
 
-		return $wpdb->get_results( $query );
+		return (int) $wpdb->get_var( $query );
 	}
 
 	/**
@@ -980,7 +1089,7 @@ class Tutor_Attendance_Calendar {
 	/**
 	 * Obtener resumen de asistencias (para admin)
 	 */
-	private function get_attendance_summary( $course_id = 0, $instructor_id = 0, $date_from = '', $date_to = '', $status = '' ) {
+	public function get_attendance_summary( $course_id = 0, $instructor_id = 0, $date_from = '', $date_to = '', $status = '', $per_page = -1, $offset = 0 ) {
 		global $wpdb;
 
 		$where = array( '1=1' );
@@ -1026,11 +1135,65 @@ class Tutor_Attendance_Calendar {
 		WHERE {$where_clause}
 		ORDER BY a.attendance_date DESC, c.post_title ASC";
 
+		// Agregar LIMIT y OFFSET si se especifica
+		if ( $per_page > 0 ) {
+			$where_values[] = $per_page;
+			$where_values[] = $offset;
+			$query .= " LIMIT %d OFFSET %d";
+		}
+
 		if ( ! empty( $where_values ) ) {
 			$query = $wpdb->prepare( $query, $where_values );
 		}
 
 		return $wpdb->get_results( $query );
+	}
+
+	/**
+	 * Obtener el conteo total de asistencias para el resumen
+	 */
+	public function get_attendance_summary_count( $course_id = 0, $instructor_id = 0, $date_from = '', $date_to = '', $status = '' ) {
+		global $wpdb;
+
+		$where = array( '1=1' );
+		$where_values = array();
+
+		if ( $course_id > 0 ) {
+			$where[] = 'a.course_id = %d';
+			$where_values[] = $course_id;
+		}
+
+		if ( $instructor_id > 0 ) {
+			$where[] = 'a.instructor_id = %d';
+			$where_values[] = $instructor_id;
+		}
+
+		if ( ! empty( $date_from ) ) {
+			$where[] = 'a.attendance_date >= %s';
+			$where_values[] = $date_from;
+		}
+
+		if ( ! empty( $date_to ) ) {
+			$where[] = 'a.attendance_date <= %s';
+			$where_values[] = $date_to;
+		}
+
+		if ( ! empty( $status ) ) {
+			$where[] = 'a.status = %s';
+			$where_values[] = $status;
+		}
+
+		$where_clause = implode( ' AND ', $where );
+
+		$query = "SELECT COUNT(*) 
+		FROM {$this->table_name} a
+		WHERE {$where_clause}";
+
+		if ( ! empty( $where_values ) ) {
+			$query = $wpdb->prepare( $query, $where_values );
+		}
+
+		return (int) $wpdb->get_var( $query );
 	}
 
 	/**
@@ -1462,8 +1625,10 @@ class Tutor_Attendance_Calendar {
 	 * Interceptar exportación muy temprano en init (para admin y frontend)
 	 */
 	public function intercept_export_request_early() {
-		// Verificar si es una petición de exportación en admin
-		$is_admin_export = isset( $_GET['page'] ) && $_GET['page'] === 'tutor-attendance-export' && ( isset( $_POST['export_excel'] ) || ( isset( $_GET['export'] ) && $_GET['export'] === 'excel' ) );
+		// Verificar si es una petición de exportación en admin (página de resumen o página de exportar)
+		$is_admin_export = isset( $_GET['page'] ) && 
+			( $_GET['page'] === 'tutor-attendance-export' || $_GET['page'] === 'tutor-attendance-summary' ) && 
+			( isset( $_POST['export_excel'] ) || ( isset( $_GET['export'] ) && $_GET['export'] === 'excel' ) );
 		
 		// Verificar si es una petición de exportación en frontend
 		if ( ! $is_admin_export && function_exists( 'tutor_utils' ) ) {
@@ -1485,7 +1650,7 @@ class Tutor_Attendance_Calendar {
 	 * Interceptar exportación en admin antes de cualquier output
 	 */
 	public function intercept_export_request() {
-		if ( isset( $_GET['page'] ) && $_GET['page'] === 'tutor-attendance-export' ) {
+		if ( isset( $_GET['page'] ) && ( $_GET['page'] === 'tutor-attendance-export' || $_GET['page'] === 'tutor-attendance-summary' ) ) {
 			if ( isset( $_POST['export_excel'] ) || ( isset( $_GET['export'] ) && $_GET['export'] === 'excel' ) ) {
 				// Limpiar todos los buffers antes de procesar
 				$this->clean_all_output_buffers();
@@ -1573,8 +1738,8 @@ class Tutor_Attendance_Calendar {
 			$instructor_id = $current_user_id;
 		}
 
-		// Obtener datos ANTES de limpiar buffers (para evitar errores)
-		$attendance_data = $this->get_attendance_summary( $course_id, $instructor_id, $date_from, $date_to, $status_filter );
+		// Obtener datos SIN paginación para exportar TODO (usar -1 para obtener todos los registros)
+		$attendance_data = $this->get_attendance_summary( $course_id, $instructor_id, $date_from, $date_to, $status_filter, -1, 0 );
 
 		// Limpiar TODOS los buffers ANTES de enviar headers
 		$this->clean_all_output_buffers();

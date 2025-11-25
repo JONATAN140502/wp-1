@@ -1,69 +1,746 @@
 /**
- * Estilos para el frontend
+ * Estilos para Vista de Asistencia del Estudiante - Usando estilos por defecto de Tutor LMS
  */
 
-.tutor-student-attendance-section {
-	margin-top: 30px;
+.tutor-student-attendance-wrapper {
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 20px;
 }
 
-.attendance-status {
-	padding: 4px 8px;
-	border-radius: 3px;
+/* ========== WELCOME CARD ========== */
+.attendance-welcome-card {
+	background: #fff;
+	border: 1px solid #e5e7eb;
+	border-radius: 8px;
+	padding: 25px;
+	margin-bottom: 30px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.welcome-content {
+	margin-bottom: 20px;
+}
+
+.welcome-title {
+	font-size: 24px;
+	font-weight: 600;
+	margin: 0 0 8px 0;
+	color: #1f2937;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.welcome-icon {
+	font-size: 28px;
+}
+
+.welcome-description {
+	font-size: 14px;
+	margin: 0;
+	color: #6b7280;
+}
+
+.welcome-stats {
+	display: flex;
+	gap: 15px;
+	flex-wrap: wrap;
+}
+
+.stat-card {
+	background: #f9fafb;
+	border: 1px solid #e5e7eb;
+	border-radius: 8px;
+	padding: 15px 20px;
+	min-width: 120px;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex: 1;
+}
+
+.stat-icon {
+	font-size: 24px;
+}
+
+.stat-info {
+	flex: 1;
+}
+
+.stat-number {
+	font-size: 24px;
+	font-weight: 600;
+	color: #1f2937;
+	line-height: 1;
+	margin-bottom: 4px;
+}
+
+.stat-label {
 	font-size: 12px;
+	color: #6b7280;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+/* ========== MARK ATTENDANCE CARDS ========== */
+.mark-attendance-section {
+	margin-bottom: 30px;
+}
+
+.section-header {
+	font-size: 20px;
+	font-weight: 600;
+	color: #1f2937;
+	margin: 0 0 20px 0;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.header-icon {
+	font-size: 22px;
+}
+
+.mark-attendance-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+	gap: 20px;
+}
+
+.mark-card {
+	background: #fff;
+	border: 1px solid #e5e7eb;
+	border-radius: 8px;
+	padding: 20px;
+	transition: all 0.2s ease;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	position: relative;
+}
+
+.mark-card:hover {
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	border-color: #cbd5e1;
+}
+
+.mark-card.marked {
+	border-color: #22c55e;
+	background: #f0fdf4;
+}
+
+.mark-card-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	margin-bottom: 15px;
+	gap: 10px;
+}
+
+.course-title {
+	font-size: 16px;
+	font-weight: 600;
+	color: #1f2937;
+	margin: 0;
+	flex: 1;
+	line-height: 1.3;
+}
+
+.status-indicator {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 4px 10px;
+	border-radius: 4px;
+	font-size: 11px;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.marked-indicator {
+	background: #22c55e;
+	color: #fff;
+}
+
+.timeout-indicator {
+	background: #f59e0b;
+	color: #fff;
+}
+
+.available-indicator {
+	background: #3b82f6;
+	color: #fff;
+}
+
+.indicator-icon {
+	font-size: 11px;
+}
+
+.mark-card-schedule {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 10px;
+	background: #f9fafb;
+	border-radius: 6px;
+	margin-bottom: 15px;
+}
+
+.schedule-icon {
+	font-size: 18px;
+}
+
+.schedule-info {
+	flex: 1;
+}
+
+.schedule-day {
+	font-weight: 600;
+	color: #3b82f6;
+	font-size: 12px;
+	margin-bottom: 3px;
+}
+
+.schedule-time {
+	color: #374151;
+	font-size: 13px;
+	font-weight: 500;
+}
+
+.mark-card-status {
+	margin-top: 15px;
+	text-align: center;
+}
+
+.status-badge-large {
+	padding: 8px 16px;
+	border-radius: 4px;
+	font-size: 13px;
 	font-weight: 600;
 	text-transform: uppercase;
+	letter-spacing: 0.5px;
 	display: inline-block;
 }
 
-.status-asistió,
-.status-asistio {
-	background-color: #46b450;
+.mark-btn {
+	width: 100%;
+	padding: 12px 20px;
+	background: #3b82f6;
+	color: #fff;
+	border: none;
+	border-radius: 6px;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	transition: all 0.2s ease;
+	margin-top: 15px;
+}
+
+.mark-btn:hover:not(.disabled) {
+	background: #2563eb;
+}
+
+.mark-btn.disabled {
+	background: #d1d5db;
+	cursor: not-allowed;
+	opacity: 0.6;
+}
+
+.btn-icon {
+	font-size: 14px;
+}
+
+.mark-card-message {
+	margin-top: 12px;
+	padding: 10px;
+	border-radius: 6px;
+	font-size: 13px;
+	text-align: center;
+	font-weight: 600;
+}
+
+.mark-card-message.success {
+	background: #d1fae5;
+	color: #065f46;
+}
+
+.mark-card-message.error {
+	background: #fee2e2;
+	color: #991b1b;
+}
+
+/* ========== FILTROS ========== */
+.attendance-filters-section {
+	margin-bottom: 30px;
+}
+
+.filters-container {
+	background: #fff;
+	border: 1px solid #e5e7eb;
+	border-radius: 8px;
+	padding: 20px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	display: flex;
+	gap: 15px;
+	align-items: flex-end;
+	flex-wrap: wrap;
+}
+
+.filter-group {
+	flex: 1;
+	min-width: 150px;
+}
+
+.filter-label {
+	display: block;
+	font-size: 13px;
+	font-weight: 600;
+	color: #374151;
+	margin-bottom: 6px;
+}
+
+.filter-field {
+	width: 100%;
+	padding: 8px 12px;
+	border: 1px solid #d1d5db;
+	border-radius: 6px;
+	font-size: 14px;
+	transition: all 0.2s ease;
+	background: #fff;
+}
+
+.filter-field:focus {
+	outline: none;
+	border-color: #3b82f6;
+	box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.filter-btn {
+	padding: 8px 20px;
+	background: #3b82f6;
+	color: #fff;
+	border: none;
+	border-radius: 6px;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	transition: all 0.2s ease;
+	white-space: nowrap;
+}
+
+.filter-btn:hover {
+	background: #2563eb;
+}
+
+.btn-icon-filter {
+	font-size: 14px;
+}
+
+/* ========== TIMELINE ========== */
+.attendance-history-section {
+	margin-bottom: 30px;
+}
+
+.attendance-timeline {
+	background: #fff;
+	border: 1px solid #e5e7eb;
+	border-radius: 8px;
+	padding: 20px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-entry {
+	display: flex;
+	gap: 15px;
+	padding: 15px;
+	margin-bottom: 12px;
+	background: #f9fafb;
+	border-radius: 8px;
+	border-left: 3px solid #e5e7eb;
+	transition: all 0.2s ease;
+}
+
+.timeline-entry:hover {
+	background: #f3f4f6;
+	border-left-color: #3b82f6;
+}
+
+.timeline-entry.today {
+	border-left-color: #3b82f6;
+	background: #eff6ff;
+}
+
+.timeline-entry:last-child {
+	margin-bottom: 0;
+}
+
+.timeline-date-box {
+	width: 60px;
+	text-align: center;
+	background: #fff;
+	border: 1px solid #e5e7eb;
+	border-radius: 8px;
+	padding: 10px 8px;
+	flex-shrink: 0;
+}
+
+.date-number {
+	font-size: 24px;
+	font-weight: 600;
+	color: #3b82f6;
+	line-height: 1;
+	margin-bottom: 4px;
+}
+
+.date-month {
+	font-size: 11px;
+	color: #6b7280;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	font-weight: 600;
+}
+
+.timeline-content-box {
+	flex: 1;
+}
+
+.content-main {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 8px;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.course-name-timeline {
+	font-size: 15px;
+	font-weight: 600;
+	color: #1f2937;
+	margin: 0;
+}
+
+.status-badge-timeline {
+	padding: 4px 12px;
+	border-radius: 4px;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.3px;
+}
+
+.content-meta {
+	display: flex;
+	gap: 12px;
+	font-size: 13px;
+	color: #6b7280;
+}
+
+.day-name {
+	font-weight: 600;
+}
+
+/* ========== STATUS BADGES ========== */
+.status-asistio,
+.status-asistió {
+	background: #22c55e;
 	color: #fff;
 }
 
 .status-falta {
-	background-color: #dc3232;
+	background: #ef4444;
 	color: #fff;
 }
 
 .status-tarde {
-	background-color: #ffb900;
+	background: #f59e0b;
 	color: #fff;
 }
 
 .status-justificado {
-	background-color: #826eb4;
+	background: #8b5cf6;
 	color: #fff;
 }
 
-.tutor-attendance-filters {
-	background: #f9f9f9;
-	padding: 15px;
-	border-radius: 5px;
-	margin-bottom: 20px;
+/* ========== EMPTY STATE ========== */
+.empty-state-visual {
+	text-align: center;
+	padding: 50px 20px;
+	background: #fff;
+	border: 1px solid #e5e7eb;
+	border-radius: 8px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.tutor-attendance-mark-section {
-	background: #e7f3ff;
-	border-left: 4px solid #0073aa;
-	padding: 15px;
-	border-radius: 5px;
-	margin-bottom: 20px;
+.empty-icon-large {
+	font-size: 64px;
+	margin-bottom: 15px;
+	opacity: 0.3;
 }
 
-.tutor-attendance-list table {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.tutor-attendance-list table th,
-.tutor-attendance-list table td {
-	padding: 10px;
-	text-align: left;
-	border-bottom: 1px solid #eee;
-}
-
-.tutor-attendance-list table thead th {
-	background: #f9f9f9;
+.empty-state-visual h3 {
+	font-size: 20px;
+	color: #374151;
+	margin: 0 0 8px 0;
 	font-weight: 600;
+}
+
+.empty-state-visual p {
+	font-size: 14px;
+	color: #6b7280;
+	margin: 0;
+}
+
+/* ========== HORARIOS ========== */
+.schedules-visual-section {
+	margin-bottom: 30px;
+}
+
+.schedules-grid-modern {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+	gap: 20px;
+}
+
+.schedule-card-modern {
+	background: #fff;
+	border: 1px solid #e5e7eb;
+	border-radius: 8px;
+	overflow: hidden;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	transition: all 0.2s ease;
+}
+
+.schedule-card-modern:hover {
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	border-color: #cbd5e1;
+}
+
+.schedule-card-top {
+	background: #f9fafb;
+	border-bottom: 1px solid #e5e7eb;
+	padding: 15px;
+}
+
+.schedule-course-title {
+	font-size: 16px;
+	font-weight: 600;
+	margin: 0 0 8px 0;
+	color: #1f2937;
+}
+
+.schedule-course-period {
+	font-size: 12px;
+	color: #6b7280;
+	display: flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.period-icon {
+	font-size: 12px;
+}
+
+.schedule-card-body {
+	padding: 15px;
+}
+
+.schedule-day-modern {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 10px 0;
+	border-bottom: 1px solid #f3f4f6;
+}
+
+.schedule-day-modern:last-child {
+	border-bottom: none;
+}
+
+.day-name-modern {
+	font-weight: 600;
+	color: #3b82f6;
+	font-size: 13px;
+	min-width: 50px;
+}
+
+.day-times {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+	flex: 1;
+}
+
+.time-badge {
+	background: #f3f4f6;
+	padding: 4px 12px;
+	border-radius: 6px;
+	font-size: 12px;
+	color: #374151;
+	font-weight: 500;
+	transition: all 0.2s ease;
+}
+
+.time-badge:hover {
+	background: #e5e7eb;
+}
+
+/* ========== PAGINACIÓN ========== */
+.attendance-pagination {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	margin-top: 30px;
+	padding-top: 20px;
+	border-top: 1px solid #e5e7eb;
+	flex-wrap: wrap;
+}
+
+.pagination-link {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 36px;
+	height: 36px;
+	padding: 6px 12px;
+	border: 1px solid #d1d5db;
+	border-radius: 6px;
+	background: #fff;
+	color: #374151;
+	text-decoration: none;
+	font-size: 14px;
+	font-weight: 500;
+	transition: all 0.2s ease;
+}
+
+.pagination-link:hover {
+	background: #f3f4f6;
+	border-color: #9ca3af;
+	color: #1f2937;
+}
+
+.pagination-link.current {
+	background: #3b82f6;
+	border-color: #3b82f6;
+	color: #fff;
+	cursor: default;
+}
+
+.pagination-link.current:hover {
+	background: #3b82f6;
+	border-color: #3b82f6;
+}
+
+.pagination-dots {
+	padding: 6px 8px;
+	color: #6b7280;
+	font-size: 14px;
+}
+
+.pagination-info {
+	margin-left: auto;
+	font-size: 13px;
+	color: #6b7280;
+	padding: 8px 12px;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+	.attendance-welcome-card {
+		padding: 20px;
+	}
+	
+	.welcome-title {
+		font-size: 20px;
+	}
+	
+	.welcome-stats {
+		flex-direction: column;
+	}
+	
+	.stat-card {
+		width: 100%;
+	}
+	
+	.mark-attendance-cards {
+		grid-template-columns: 1fr;
+	}
+	
+	.filters-container {
+		flex-direction: column;
+	}
+	
+	.filter-group {
+		width: 100%;
+	}
+	
+	.timeline-entry {
+		padding-left: 80px;
+	}
+	
+	.timeline-date-box {
+		position: absolute;
+		left: 15px;
+		width: 55px;
+	}
+	
+	.schedules-grid-modern {
+		grid-template-columns: 1fr;
+	}
+	
+	.attendance-pagination {
+		flex-direction: column;
+		align-items: stretch;
+	}
+	
+	.pagination-info {
+		margin-left: 0;
+		text-align: center;
+		margin-top: 10px;
+	}
+	
+	.pagination-link {
+		flex: 1;
+		max-width: 120px;
+	}
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(-5px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.mark-card,
+.timeline-entry,
+.schedule-card-modern {
+	animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes spin {
+	to { transform: rotate(360deg); }
+}
+
+.loading-spinner-inline {
+	display: inline-block;
+	width: 14px;
+	height: 14px;
+	border: 2px solid rgba(255,255,255,0.3);
+	border-top-color: #fff;
+	border-radius: 50%;
+	animation: spin 0.8s linear infinite;
+	margin-right: 5px;
 }

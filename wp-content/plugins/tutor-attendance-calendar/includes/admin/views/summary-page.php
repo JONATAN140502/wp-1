@@ -294,15 +294,125 @@ if ( ! defined( 'ABSPATH' ) ) {
 				</tbody>
 			</table>
 
+			<!-- Paginación -->
+			<?php if ( isset( $total_pages ) && $total_pages > 1 ) : ?>
+				<div class="tablenav">
+					<div class="tablenav-pages">
+						<?php
+						$base_url = admin_url( 'admin.php?page=tutor-attendance-summary' );
+						$query_args = array();
+						if ( $course_id > 0 ) {
+							$query_args['course_id'] = $course_id;
+						}
+						if ( $instructor_id > 0 ) {
+							$query_args['instructor_id'] = $instructor_id;
+						}
+						if ( ! empty( $date_from ) ) {
+							$query_args['date_from'] = $date_from;
+						}
+						if ( ! empty( $date_to ) ) {
+							$query_args['date_to'] = $date_to;
+						}
+						if ( ! empty( $status_filter ) ) {
+							$query_args['status'] = $status_filter;
+						}
+						
+						// Información de paginación
+						$per_page = isset( $per_page ) ? $per_page : 20;
+						$offset = isset( $offset ) ? $offset : 0;
+						$total_count = isset( $total_count ) ? $total_count : count( $attendance_data );
+						$start = $offset + 1;
+						$end = min( $offset + $per_page, $total_count );
+						?>
+						<span class="displaying-num">
+							<?php
+							printf(
+								esc_html__( 'Mostrando %1$d - %2$d de %3$d', 'tutor-attendance-calendar' ),
+								$start,
+								$end,
+								$total_count
+							);
+							?>
+						</span>
+						
+						<?php
+						// Primera página
+						if ( $current_page > 1 ) {
+							$first_url = add_query_arg( array_merge( $query_args, array( 'paged' => 1 ) ), $base_url );
+							echo '<a class="first-page button" href="' . esc_url( $first_url ) . '"><span class="screen-reader-text">' . esc_html__( 'Primera página', 'tutor-attendance-calendar' ) . '</span><span aria-hidden="true">&laquo;</span></a>';
+						} else {
+							echo '<span class="tablenav-pages-navspan button disabled" aria-hidden="true">&laquo;</span>';
+						}
+						
+						// Página anterior
+						if ( $current_page > 1 ) {
+							$prev_url = add_query_arg( array_merge( $query_args, array( 'paged' => $current_page - 1 ) ), $base_url );
+							echo '<a class="prev-page button" href="' . esc_url( $prev_url ) . '"><span class="screen-reader-text">' . esc_html__( 'Página anterior', 'tutor-attendance-calendar' ) . '</span><span aria-hidden="true">&lsaquo;</span></a>';
+						} else {
+							echo '<span class="tablenav-pages-navspan button disabled" aria-hidden="true">&lsaquo;</span>';
+						}
+						
+						// Números de página
+						$start_page = max( 1, $current_page - 2 );
+						$end_page = min( $total_pages, $current_page + 2 );
+						
+						if ( $start_page > 1 ) {
+							$url = add_query_arg( array_merge( $query_args, array( 'paged' => 1 ) ), $base_url );
+							echo '<a class="button" href="' . esc_url( $url ) . '">1</a>';
+							if ( $start_page > 2 ) {
+								echo '<span class="paging-input"><span class="tablenav-paging-text"> … </span></span>';
+							}
+						}
+						
+						for ( $i = $start_page; $i <= $end_page; $i++ ) {
+							if ( $i == $current_page ) {
+								echo '<span class="tablenav-pages-navspan button disabled" aria-current="page">' . esc_html( $i ) . '</span>';
+							} else {
+								$url = add_query_arg( array_merge( $query_args, array( 'paged' => $i ) ), $base_url );
+								echo '<a class="button" href="' . esc_url( $url ) . '">' . esc_html( $i ) . '</a>';
+							}
+						}
+						
+						if ( $end_page < $total_pages ) {
+							if ( $end_page < $total_pages - 1 ) {
+								echo '<span class="paging-input"><span class="tablenav-paging-text"> … </span></span>';
+							}
+							$url = add_query_arg( array_merge( $query_args, array( 'paged' => $total_pages ) ), $base_url );
+							echo '<a class="button" href="' . esc_url( $url ) . '">' . esc_html( $total_pages ) . '</a>';
+						}
+						
+						// Página siguiente
+						if ( $current_page < $total_pages ) {
+							$next_url = add_query_arg( array_merge( $query_args, array( 'paged' => $current_page + 1 ) ), $base_url );
+							echo '<a class="next-page button" href="' . esc_url( $next_url ) . '"><span class="screen-reader-text">' . esc_html__( 'Página siguiente', 'tutor-attendance-calendar' ) . '</span><span aria-hidden="true">&rsaquo;</span></a>';
+						} else {
+							echo '<span class="tablenav-pages-navspan button disabled" aria-hidden="true">&rsaquo;</span>';
+						}
+						
+						// Última página
+						if ( $current_page < $total_pages ) {
+							$last_url = add_query_arg( array_merge( $query_args, array( 'paged' => $total_pages ) ), $base_url );
+							echo '<a class="last-page button" href="' . esc_url( $last_url ) . '"><span class="screen-reader-text">' . esc_html__( 'Última página', 'tutor-attendance-calendar' ) . '</span><span aria-hidden="true">&raquo;</span></a>';
+						} else {
+							echo '<span class="tablenav-pages-navspan button disabled" aria-hidden="true">&raquo;</span>';
+						}
+						?>
+					</div>
+				</div>
+			<?php endif; ?>
+
 			<div class="tutor-results-stats">
 				<div class="tutor-stat-box">
-					<div class="stat-value"><?php echo count( $attendance_data ); ?></div>
+					<div class="stat-value"><?php echo isset( $total_count ) ? esc_html( $total_count ) : count( $attendance_data ); ?></div>
 					<div class="stat-label"><?php esc_html_e( 'Total de Registros', 'tutor-attendance-calendar' ); ?></div>
 				</div>
 				<?php
+				// Para las estadísticas, necesitamos obtener todos los registros sin paginación
+				$plugin = Tutor_Attendance_Calendar::get_instance();
+				$all_attendance_for_stats = $plugin->get_attendance_summary( $course_id, $instructor_id, $date_from, $date_to, $status_filter, -1, 0 );
 				$states = get_option( 'tutor_attendance_states', array( 'Asistió', 'Falta', 'Tarde', 'Justificado' ) );
 				foreach ( $states as $state ) :
-					$count = count( array_filter( $attendance_data, function( $record ) use ( $state ) {
+					$count = count( array_filter( $all_attendance_for_stats, function( $record ) use ( $state ) {
 						return $record->status === $state;
 					} ) );
 					if ( $count > 0 ) :
