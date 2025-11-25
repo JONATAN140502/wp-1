@@ -1,0 +1,175 @@
+/**
+ * Estilos para el área de administración
+ */
+
+.attendance-status {
+	padding: 4px 8px;
+	border-radius: 3px;
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+	display: inline-block;
+}
+
+.status-asistió,
+.status-asistio {
+	background-color: #46b450;
+	color: #fff;
+}
+
+.status-falta {
+	background-color: #dc3232;
+	color: #fff;
+}
+
+.status-tarde {
+	background-color: #ffb900;
+	color: #fff;
+}
+
+.status-justificado {
+	background-color: #826eb4;
+	color: #fff;
+}
+
+.tutor-attendance-filters,
+.tutor-attendance-select,
+.tutor-attendance-form {
+	margin-bottom: 20px;
+}
+
+.tutor-attendance-results table {
+	margin-top: 10px;
+}
+
+.save-message {
+	font-weight: 600;
+}
+
+.save-message.success {
+	color: #46b450;
+}
+
+.save-message.error {
+	color: #dc3232;
+}
+
+/* Estilos mejorados para asistencias ya marcadas */
+.tutor-attendance-form table tbody tr.has-attendance-marked {
+	background-color: #f0fdf4;
+	border-left: 3px solid #22c55e;
+}
+
+.tutor-attendance-form table tbody tr.has-attendance-marked:hover {
+	background-color: #dcfce7;
+}
+
+/* Badge de estado de asistencia */
+.attendance-status-badge {
+	padding: 6px 14px;
+	border-radius: 6px;
+	font-size: 13px;
+	font-weight: 600;
+	display: inline-block;
+	text-transform: capitalize;
+}
+
+.attendance-status-badge.status-present {
+	background-color: #d1fae5;
+	color: #065f46;
+	border: 1px solid #86efac;
+}
+
+.attendance-status-badge.status-absent {
+	background-color: #fee2e2;
+	color: #991b1b;
+	border: 1px solid #fca5a5;
+}
+
+.attendance-status-badge.status-late {
+	background-color: #fef3c7;
+	color: #92400e;
+	border: 1px solid #fde047;
+}
+
+.attendance-status-badge.status-justified {
+	background-color: #e0e7ff;
+	color: #3730a3;
+	border: 1px solid #a5b4fc;
+}
+
+.attendance-status-badge.status-default {
+	background-color: #f3f4f6;
+	color: #374151;
+	border: 1px solid #d1d5db;
+}
+
+/* Indicador visual de check */
+.attendance-indicator {
+	display: inline-block;
+	width: 20px;
+	height: 20px;
+	line-height: 20px;
+	text-align: center;
+	border-radius: 50%;
+	background-color: #d1fae5;
+	color: #065f46;
+	font-weight: bold;
+	font-size: 14px;
+}
+
+/* Select con valor marcado */
+.attendance-status-select.has-value {
+	border-width: 2px;
+	border-color: #22c55e;
+	font-weight: 600;
+}
+
+.attendance-status-select.has-value:focus {
+	border-color: #22c55e;
+	box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+
+/* Estilos para cambios no guardados */
+.tutor-attendance-form table tbody tr.has-changes {
+	background-color: #fff3cd;
+	border-left-color: #ffc107;
+}
+
+.tutor-attendance-form table tbody tr.has-changes:hover {
+	background-color: #ffe69c;
+}
+
+/* Botones de acción rápida */
+.quick-actions .quick-mark-btn {
+	transition: all 0.2s ease;
+}
+
+.quick-actions .quick-mark-btn.button-primary {
+	background-color: #2271b1;
+	border-color: #2271b1;
+	color: #fff;
+}
+
+/* Paginación */
+.tablenav {
+	clear: both;
+}
+
+.tablenav .tablenav-pages {
+	float: right;
+	margin: 0;
+}
+
+.tablenav .pagination-links {
+	display: inline-block;
+}
+
+.tablenav .tablenav-pages-navspan {
+	padding: 0 4px 2px;
+}
+
+.tablenav .current-page {
+	width: 50px;
+	text-align: center;
+}

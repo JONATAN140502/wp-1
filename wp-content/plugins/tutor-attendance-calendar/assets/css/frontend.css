@@ -1,0 +1,69 @@
+/**
+ * Estilos para el frontend
+ */
+
+.tutor-student-attendance-section {
+	margin-top: 30px;
+}
+
+.attendance-status {
+	padding: 4px 8px;
+	border-radius: 3px;
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+	display: inline-block;
+}
+
+.status-asistió,
+.status-asistio {
+	background-color: #46b450;
+	color: #fff;
+}
+
+.status-falta {
+	background-color: #dc3232;
+	color: #fff;
+}
+
+.status-tarde {
+	background-color: #ffb900;
+	color: #fff;
+}
+
+.status-justificado {
+	background-color: #826eb4;
+	color: #fff;
+}
+
+.tutor-attendance-filters {
+	background: #f9f9f9;
+	padding: 15px;
+	border-radius: 5px;
+	margin-bottom: 20px;
+}
+
+.tutor-attendance-mark-section {
+	background: #e7f3ff;
+	border-left: 4px solid #0073aa;
+	padding: 15px;
+	border-radius: 5px;
+	margin-bottom: 20px;
+}
+
+.tutor-attendance-list table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.tutor-attendance-list table th,
+.tutor-attendance-list table td {
+	padding: 10px;
+	text-align: left;
+	border-bottom: 1px solid #eee;
+}
+
+.tutor-attendance-list table thead th {
+	background: #f9f9f9;
+	font-weight: 600;
+}
