@@ -1,0 +1,386 @@
+/**
+ * Estilos para administración de recursos - Interfaz tipo Google Drive
+ */
+
+/* Contenedor principal tipo Drive */
+.tutor-drive-wrapper {
+	background: #fff;
+	min-height: calc(100vh - 32px);
+}
+
+/* Header tipo Drive */
+.tutor-drive-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 20px 30px;
+	border-bottom: 1px solid #e5e7eb;
+	background: #fff;
+}
+
+.drive-header-left {
+	display: flex;
+	align-items: center;
+	gap: 20px;
+}
+
+.drive-title {
+	font-size: 22px;
+	font-weight: 500;
+	margin: 0;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.drive-title .dashicons {
+	font-size: 24px;
+	color: #4285f4;
+}
+
+.breadcrumb {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	color: #5f6368;
+	font-size: 14px;
+}
+
+.breadcrumb a {
+	color: #4285f4;
+	text-decoration: none;
+}
+
+.breadcrumb a:hover {
+	text-decoration: underline;
+}
+
+.breadcrumb .separator {
+	color: #dadce0;
+}
+
+.drive-header-right {
+	display: flex;
+	gap: 10px;
+}
+
+.drive-header-right .button {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+/* Barra de herramientas */
+.tutor-drive-toolbar {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 15px 30px;
+	border-bottom: 1px solid #e5e7eb;
+	background: #f8f9fa;
+}
+
+.toolbar-left .drive-filter {
+	padding: 6px 12px;
+	border: 1px solid #dadce0;
+	border-radius: 4px;
+	background: #fff;
+	font-size: 14px;
+}
+
+.view-toggle {
+	display: flex;
+	gap: 5px;
+}
+
+.view-btn {
+	background: transparent;
+	border: 1px solid #dadce0;
+	padding: 6px 10px;
+	border-radius: 4px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	transition: all 0.2s;
+}
+
+.view-btn:hover {
+	background: #e8eaed;
+}
+
+.view-btn.active {
+	background: #4285f4;
+	border-color: #4285f4;
+	color: #fff;
+}
+
+.view-btn .dashicons {
+	font-size: 18px;
+}
+
+/* Contenido tipo Drive */
+.tutor-drive-content {
+	padding: 30px;
+	min-height: 500px;
+}
+
+.tutor-drive-content[data-view="grid"] .drive-items {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+	gap: 20px;
+}
+
+.tutor-drive-content[data-view="list"] .drive-items {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+}
+
+.tutor-drive-content[data-view="list"] .drive-item {
+	flex-direction: row;
+	padding: 12px 15px;
+	border-bottom: 1px solid #e5e7eb;
+	border-radius: 0;
+}
+
+.tutor-drive-content[data-view="list"] .drive-item:hover {
+	background: #f8f9fa;
+}
+
+.drive-items {
+	margin-bottom: 30px;
+}
+
+/* Items tipo Drive */
+.drive-item {
+	position: relative;
+	background: #fff;
+	border: 1px solid #e5e7eb;
+	border-radius: 8px;
+	padding: 15px;
+	transition: all 0.2s;
+	cursor: pointer;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+}
+
+.drive-item:hover {
+	box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+	border-color: #4285f4;
+}
+
+.drive-item:hover .item-actions {
+	opacity: 1;
+}
+
+.item-icon {
+	margin-bottom: 10px;
+}
+
+.item-icon .dashicons {
+	font-size: 48px;
+	width: 48px;
+	height: 48px;
+	color: #5f6368;
+}
+
+.folder-item .item-icon .dashicons {
+	color: #fbbc04;
+}
+
+.item-name {
+	font-size: 13px;
+	font-weight: 500;
+	color: #202124;
+	margin-bottom: 5px;
+	word-break: break-word;
+	width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.item-meta {
+	font-size: 11px;
+	color: #5f6368;
+	margin-top: 5px;
+}
+
+.course-badge,
+.libre-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 12px;
+	font-size: 10px;
+	font-weight: 500;
+	background: #e8f0fe;
+	color: #1a73e8;
+}
+
+.libre-badge {
+	background: #fef7e0;
+	color: #ea8600;
+}
+
+.item-actions {
+	position: absolute;
+	top: 5px;
+	right: 5px;
+	display: flex;
+	gap: 5px;
+	opacity: 0;
+	transition: opacity 0.2s;
+}
+
+.item-action {
+	background: rgba(255,255,255,0.9);
+	border: 1px solid #dadce0;
+	border-radius: 4px;
+	padding: 5px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.2s;
+}
+
+.item-action:hover {
+	background: #fff;
+	border-color: #4285f4;
+}
+
+.item-action .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+	color: #5f6368;
+}
+
+.item-action:hover .dashicons {
+	color: #4285f4;
+}
+
+/* Estado vacío */
+.drive-empty-state {
+	text-align: center;
+	padding: 80px 20px;
+	color: #5f6368;
+}
+
+.empty-icon {
+	margin-bottom: 20px;
+}
+
+.drive-empty-state h3 {
+	font-size: 18px;
+	font-weight: 500;
+	margin: 0 0 10px 0;
+	color: #202124;
+}
+
+.drive-empty-state p {
+	font-size: 14px;
+	margin: 0;
+}
+
+/* Modales */
+.tutor-drive-modal {
+	display: none;
+	position: fixed;
+	z-index: 100000;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	overflow: auto;
+	background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+	background-color: #fff;
+	margin: 5% auto;
+	padding: 0;
+	border-radius: 8px;
+	width: 90%;
+	max-width: 600px;
+	box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+	padding: 20px 24px;
+	border-bottom: 1px solid #e5e7eb;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.modal-header h2 {
+	margin: 0;
+	font-size: 18px;
+	font-weight: 500;
+}
+
+.modal-close {
+	background: none;
+	border: none;
+	font-size: 24px;
+	cursor: pointer;
+	color: #5f6368;
+	padding: 0;
+	width: 30px;
+	height: 30px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.modal-close:hover {
+	color: #202124;
+}
+
+.modal-content .form-table {
+	margin-top: 0;
+}
+
+.modal-content .form-table th {
+	padding: 15px 24px;
+	width: 150px;
+}
+
+.modal-content .form-table td {
+	padding: 15px 24px;
+}
+
+.modal-content .submit {
+	padding: 15px 24px;
+	border-top: 1px solid #e5e7eb;
+	display: flex;
+	gap: 10px;
+	justify-content: flex-end;
+	margin: 0;
+}
+
+.required {
+	color: #ea4335;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+	.tutor-drive-header {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 15px;
+	}
+	
+	.drive-header-right {
+		width: 100%;
+		flex-wrap: wrap;
+	}
+	
+	.tutor-drive-content[data-view="grid"] .drive-items {
+		grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+		gap: 15px;
+	}
+}
