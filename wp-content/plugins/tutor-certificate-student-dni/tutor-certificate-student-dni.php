@@ -98,6 +98,16 @@ class Tutor_Certificate_Student_DNI {
 		// Agregar funcionalidad de búsqueda de certificados
 		$this->init_certificate_search();
 		
+		// Agregar funcionalidad para generar dos páginas del certificado
+		$this->init_two_page_certificate();
+		
+		// Cargar script para generar PDF con dos páginas
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_certificate_pdf_script' ) );
+		
+		// Agregar endpoint AJAX para obtener el temario del curso
+		add_action( 'wp_ajax_tutor_get_course_curriculum', array( $this, 'ajax_get_course_curriculum' ) );
+		add_action( 'wp_ajax_nopriv_tutor_get_course_curriculum', array( $this, 'ajax_get_course_curriculum' ) );
+		
 		// Crear/verificar la página de certificados en Tutor LMS
 		// Solo verificar que la página configurada exista, no crear automáticamente
 		add_action( 'admin_init', array( $this, 'ensure_certificate_page_exists' ), 5 );
@@ -451,6 +461,516 @@ class Tutor_Certificate_Student_DNI {
 	}
 	
 	/**
+	 * Endpoint AJAX para obtener el temario del curso
+	 */
+	public function ajax_get_course_curriculum() {
+		$cert_hash = isset( $_GET['cert_hash'] ) ? sanitize_text_field( $_GET['cert_hash'] ) : '';
+		
+		if ( empty( $cert_hash ) ) {
+			wp_send_json_error( array( 'message' => __( 'Cert hash requerido', 'tutor-certificate-student-dni' ) ) );
+			return;
+		}
+		
+		// Obtener datos de finalización del curso
+		if ( ! function_exists( 'TUTOR_CERT' ) || ! class_exists( '\TUTOR_CERT\Certificate' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Certificate plugin no disponible', 'tutor-certificate-student-dni' ) ) );
+			return;
+		}
+		
+		$cert_obj = new \TUTOR_CERT\Certificate( true );
+		$completed = apply_filters( 'tutor_certificate_completion_data', $cert_hash );
+		
+		if ( ! is_object( $completed ) || ! property_exists( $completed, 'course_id' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Certificado no válido', 'tutor-certificate-student-dni' ) ) );
+			return;
+		}
+		
+		// Obtener el temario del curso (topics y sus contenidos)
+		$course_curriculum = array();
+		if ( function_exists( 'tutor_utils' ) ) {
+			$topics = tutor_utils()->get_topics( $completed->course_id );
+			if ( $topics && $topics->have_posts() ) {
+				while ( $topics->have_posts() ) {
+					$topics->the_post();
+					$topic_id = get_the_ID();
+					$topic_title = get_the_title();
+					
+					// Obtener solo las lecciones (no quizzes ni tareas)
+					$topic_contents = tutor_utils()->get_course_contents_by_topic( $topic_id, -1 );
+					$contents = array();
+					
+					if ( $topic_contents && $topic_contents->have_posts() ) {
+						while ( $topic_contents->have_posts() ) {
+							$topic_contents->the_post();
+							$post_type = get_post_type();
+							// Solo incluir lecciones (lesson)
+							if ( $post_type === 'lesson' ) {
+								$contents[] = array(
+									'title' => get_the_title(),
+									'type' => $post_type,
+								);
+							}
+						}
+						wp_reset_postdata();
+					}
+					
+					$course_curriculum[] = array(
+						'topic_title' => $topic_title,
+						'contents' => $contents,
+					);
+				}
+				wp_reset_postdata();
+			}
+		}
+		
+		// Obtener el QR URL del certificado
+		$qr_url = apply_filters( 'tutor_certificate_public_url', $cert_hash );
+		
+		// Obtener la URL del fondo del template del certificado (ANTES de renderizar variables)
+		$background_url = '';
+		
+		// PRIORIDAD 1: Verificar si hay un fondo personalizado configurado
+		$custom_background_url = get_option( 'certificate_second_page_background_url', '' );
+		if ( ! empty( $custom_background_url ) ) {
+			$background_url = $custom_background_url;
+		}
+		
+		// PRIORIDAD 2: Si no hay fondo personalizado, usar el fondo del certificado builder
+		if ( empty( $background_url ) && function_exists( 'TUTOR_CERT' ) ) {
+			$cert_obj = new \TUTOR_CERT\Certificate( true );
+			$template = $cert_obj->get_course_certificate_template( $completed->course_id );
+			
+			if ( $template ) {
+				// Verificar si es un certificado del builder (tutor_cb_XXX)
+				$template_key = isset( $template['key'] ) ? $template['key'] : '';
+				
+				if ( strpos( $template_key, 'tutor_cb_' ) === 0 ) {
+					// Es un certificado del builder, obtener la imagen de fondo del canvas
+					$certificate_id = str_replace( 'tutor_cb_', '', $template_key );
+					$certificate_id = (int) $certificate_id;
+					
+					if ( $certificate_id > 0 ) {
+						// Función auxiliar para convertir URL a absoluta
+						$convert_to_absolute_url = function( $url ) {
+							if ( empty( $url ) || ! is_string( $url ) ) {
+								return '';
+							}
+							
+							// Si ya es una URL absoluta, retornarla
+							if ( strpos( $url, 'http://' ) === 0 || strpos( $url, 'https://' ) === 0 ) {
+								return $url;
+							}
+							
+							// Si es una URL relativa que empieza con /, usar home_url
+							if ( strpos( $url, '/' ) === 0 ) {
+								return home_url( $url );
+							}
+							
+							// Si es una URL relativa sin /, puede ser una ruta de WordPress
+							// Intentar obtener la URL del attachment si es un ID numérico
+							if ( is_numeric( $url ) ) {
+								$attachment_url = wp_get_attachment_url( (int) $url );
+								if ( $attachment_url ) {
+									return $attachment_url;
+								}
+							}
+							
+							// Si contiene wp-content, puede ser una ruta relativa
+							if ( strpos( $url, 'wp-content' ) !== false ) {
+								return home_url( '/' . ltrim( $url, '/' ) );
+							}
+							
+							// Si contiene uploads, puede ser una ruta relativa
+							if ( strpos( $url, 'uploads' ) !== false ) {
+								$upload_dir = wp_upload_dir();
+								return $upload_dir['baseurl'] . '/' . ltrim( str_replace( $upload_dir['basedir'], '', $url ), '/' );
+							}
+							
+							// Por defecto, intentar con home_url
+							return home_url( '/' . ltrim( $url, '/' ) );
+						};
+						
+						// Función auxiliar para procesar los datos del certificado
+						$process_certificate_data = function( $certificate_data ) use ( $convert_to_absolute_url ) {
+							$background_url = '';
+							
+							if ( ! $certificate_data ) {
+								return $background_url;
+							}
+							
+							$cert_data = is_serialized( $certificate_data ) ? unserialize( $certificate_data ) : json_decode( $certificate_data, true );
+							
+							if ( ! $cert_data || ! is_array( $cert_data ) ) {
+								return $background_url;
+							}
+							
+							// PRIORIDAD 1: Buscar en canvas.backdrop.value (fondo principal del template)
+							if ( isset( $cert_data['canvas']['backdrop']['value'] ) && ! empty( $cert_data['canvas']['backdrop']['value'] ) ) {
+								$bg_image = $cert_data['canvas']['backdrop']['value'];
+								$background_url = $convert_to_absolute_url( $bg_image );
+								if ( ! empty( $background_url ) ) {
+									return $background_url;
+								}
+							}
+							
+							// PRIORIDAD 2: Buscar en canvas.settings.backgroundImage
+							if ( isset( $cert_data['canvas']['settings']['backgroundImage'] ) && ! empty( $cert_data['canvas']['settings']['backgroundImage'] ) ) {
+								$bg_image = $cert_data['canvas']['settings']['backgroundImage'];
+								$background_url = $convert_to_absolute_url( $bg_image );
+								if ( ! empty( $background_url ) ) {
+									return $background_url;
+								}
+							}
+								
+							// PRIORIDAD 3: Buscar en canvas.objects la imagen de fondo
+							// Buscar imágenes que cubran todo el canvas (son el fondo)
+							if ( empty( $background_url ) && isset( $cert_data['canvas']['objects'] ) && is_array( $cert_data['canvas']['objects'] ) ) {
+									$canvas_width = isset( $cert_data['canvas']['settings']['width'] ) ? (int) $cert_data['canvas']['settings']['width'] : 800;
+									$canvas_height = isset( $cert_data['canvas']['settings']['height'] ) ? (int) $cert_data['canvas']['settings']['height'] : 600;
+									
+									$background_obj = null;
+									$lowest_z_index = null;
+									
+									// Primero: buscar imágenes que cubran todo el canvas y estén en (0,0) o cerca
+									// Estas son las imágenes de fondo (no tienen texto ni variables)
+									foreach ( $cert_data['canvas']['objects'] as $obj ) {
+										if ( isset( $obj['type'] ) && $obj['type'] === 'image' && isset( $obj['src'] ) ) {
+											// Ignorar objetos que no sean imágenes puras (pueden tener texto o variables)
+											// Solo buscar imágenes que sean el fondo
+											$obj_width = isset( $obj['width'] ) ? (int) $obj['width'] : 0;
+											$obj_height = isset( $obj['height'] ) ? (int) $obj['height'] : 0;
+											$obj_left = isset( $obj['left'] ) ? (int) $obj['left'] : 0;
+											$obj_top = isset( $obj['top'] ) ? (int) $obj['top'] : 0;
+											$z_index = isset( $obj['zIndex'] ) ? (int) $obj['zIndex'] : 0;
+											
+											// Buscar imágenes que cubran todo el canvas (son el fondo)
+											// Debe estar en (0,0) o muy cerca y cubrir todo el canvas
+											// Y debe ser una imagen (no un texto con variables)
+											$covers_canvas = ( $obj_left <= 10 && $obj_top <= 10 && 
+											                  $obj_width >= ( $canvas_width * 0.95 ) && 
+											                  $obj_height >= ( $canvas_height * 0.95 ) );
+											
+											if ( $covers_canvas ) {
+												// Si cubre el canvas, preferir la que tenga el z-index más bajo
+												// (las imágenes de fondo suelen tener el z-index más bajo)
+												if ( $lowest_z_index === null || $z_index < $lowest_z_index ) {
+													$lowest_z_index = $z_index;
+													$background_obj = $obj;
+												}
+											}
+										}
+									}
+									
+									// Si no se encontró una imagen que cubra todo el canvas, buscar la de z-index más bajo
+									// (puede ser que la imagen de fondo no cubra exactamente todo el canvas)
+									if ( ! $background_obj ) {
+										foreach ( $cert_data['canvas']['objects'] as $obj ) {
+											if ( isset( $obj['type'] ) && $obj['type'] === 'image' && isset( $obj['src'] ) ) {
+												$z_index = isset( $obj['zIndex'] ) ? (int) $obj['zIndex'] : 0;
+												
+												// Buscar la imagen con el z-index más bajo (está al fondo)
+												// Esta debería ser la imagen de fondo original
+												if ( $lowest_z_index === null || $z_index < $lowest_z_index ) {
+													$lowest_z_index = $z_index;
+													$background_obj = $obj;
+												}
+											}
+										}
+									}
+									
+								if ( $background_obj && isset( $background_obj['src'] ) ) {
+									$bg_src = $background_obj['src'];
+									// Convertir a URL absoluta y asegurarse de que sea la imagen original
+									$background_url = $convert_to_absolute_url( $bg_src );
+									
+									// Verificar que la URL no contenga parámetros de renderizado
+									// (algunos sistemas agregan parámetros como ?render=true)
+									if ( strpos( $background_url, '?' ) !== false ) {
+										$background_url = strtok( $background_url, '?' );
+									}
+								}
+							}
+							
+							return $background_url;
+						};
+						
+						// Primero intentar obtener de tutor_certificate_data (publicado)
+						$certificate_data = get_post_meta( $certificate_id, 'tutor_certificate_data', true );
+						$background_url = $process_certificate_data( $certificate_data );
+						
+						// Si no se encuentra, intentar con tutor_certificate_draft_data (borrador)
+						if ( empty( $background_url ) ) {
+							$certificate_draft_data = get_post_meta( $certificate_id, 'tutor_certificate_draft_data', true );
+							$background_url = $process_certificate_data( $certificate_draft_data );
+						}
+					}
+				} else {
+					// Es un template tradicional, usar background.png
+					if ( isset( $template['background_src'] ) && ! empty( $template['background_src'] ) ) {
+						$background_url = $template['background_src'];
+					} elseif ( isset( $template['url'] ) ) {
+						// Si no hay background_src, usar la URL del template + background.png
+						$background_url = $template['url'] . 'background.png';
+					}
+				}
+			}
+		}
+		
+		wp_send_json_success( array( 
+			'COURSE_CURRICULUM' => $course_curriculum,
+			'QR_URL' => $qr_url,
+			'BACKGROUND_URL' => $background_url
+		) );
+	}
+
+	/**
+	 * Inicializar funcionalidad de dos páginas del certificado
+	 */
+	public function init_two_page_certificate() {
+		// Interceptar cuando se guarda la imagen del certificado para generar también la segunda página
+		add_action( 'wp_ajax_tutor_store_certificate_image', array( $this, 'store_second_page_image' ), 5 );
+		add_action( 'wp_ajax_nopriv_tutor_store_certificate_image', array( $this, 'store_second_page_image' ), 5 );
+		
+		// Encolar script para generar dos imágenes del certificado
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_two_page_certificate_script' ) );
+		
+		// Agregar endpoint AJAX para guardar la segunda página
+		add_action( 'wp_ajax_tutor_store_certificate_second_page', array( $this, 'ajax_store_second_page' ) );
+		add_action( 'wp_ajax_nopriv_tutor_store_certificate_second_page', array( $this, 'ajax_store_second_page' ) );
+		
+		// Agregar la segunda página a la vista del certificado usando output buffering
+		add_action( 'wp_footer', array( $this, 'display_second_page_script' ) );
+	}
+	
+	/**
+	 * Agregar script para mostrar la segunda página del certificado
+	 */
+	public function display_second_page_script() {
+		// Solo en la página de certificados
+		if ( ! isset( $_GET['cert_hash'] ) || empty( $_GET['cert_hash'] ) ) {
+			return;
+		}
+		
+		$cert_hash = sanitize_text_field( $_GET['cert_hash'] );
+		
+		if ( ! function_exists( 'TUTOR_CERT' ) ) {
+			return;
+		}
+		
+		$cert_obj = new \TUTOR_CERT\Certificate( true );
+		$completed = $cert_obj->completed_course( $cert_hash );
+		
+		if ( ! $completed ) {
+			return;
+		}
+		
+		$upload_dir = wp_upload_dir();
+		$certificate_dir_url = $upload_dir['baseurl'] . '/' . $cert_obj->certificates_dir_name;
+		$rand_string = get_comment_meta( $completed->certificate_id, $cert_obj->certificate_stored_key, true );
+		
+		if ( empty( $rand_string ) ) {
+			return;
+		}
+		
+		$second_page_path = '/' . $rand_string . '-' . $cert_hash . '-page2.jpg';
+		$second_page_url = $certificate_dir_url . $second_page_path;
+		$second_page_file = $upload_dir['basedir'] . '/' . $cert_obj->certificates_dir_name . $second_page_path;
+		
+		// Pasar datos al JavaScript
+		?>
+		<script>
+		jQuery(document).ready(function($) {
+			var certHash = '<?php echo esc_js( $cert_hash ); ?>';
+			var secondPageUrl = '<?php echo esc_js( $second_page_url ); ?>';
+			var secondPageExists = <?php echo file_exists( $second_page_file ) ? 'true' : 'false'; ?>;
+			
+			// Función para mostrar la segunda página
+			function showSecondPage() {
+				var $certContainer = $('#tutor-pro-certificate-preview').closest('.tutor-certificate-demo');
+				if (!$certContainer.length) {
+					// Intentar encontrar el contenedor de otra forma
+					$certContainer = $('.tutor-certificate-demo').first();
+				}
+				
+				if ($certContainer.length) {
+					// Verificar que no se haya agregado ya
+					if ($certContainer.next('.tutor-certificate-demo[data-second-page]').length === 0) {
+						var secondPageHtml = '<div class="tutor-certificate-demo tutor-pb-44 tutor-mt-24" data-second-page="1"><span class="tutor-dc-demo-img"><img src="' + secondPageUrl + '" alt="Temario del Curso" style="width:100%;max-width:100%;height:auto;" onerror="this.style.display=\'none\'" /></span></div>';
+						$certContainer.after(secondPageHtml);
+					}
+				}
+			}
+			
+			// Si la segunda página existe, mostrarla inmediatamente
+			if (secondPageExists) {
+				showSecondPage();
+			} else {
+				// Si no existe, verificar periódicamente si se genera
+				var checkInterval = setInterval(function() {
+					var testImg = new Image();
+					testImg.onload = function() {
+						secondPageExists = true;
+						clearInterval(checkInterval);
+						showSecondPage();
+					};
+					testImg.onerror = function() {
+						// No existe aún, continuar verificando
+					};
+					testImg.src = secondPageUrl;
+				}, 2000);
+				
+				// Limpiar después de 60 segundos
+				setTimeout(function() {
+					clearInterval(checkInterval);
+				}, 60000);
+			}
+		});
+		</script>
+		<?php
+	}
+
+	/**
+	 * Interceptar el guardado de la imagen del certificado para generar también la segunda página
+	 */
+	public function store_second_page_image() {
+		// No hacer nada aquí, solo dejar que el proceso normal continúe
+		// La segunda página se generará desde JavaScript
+	}
+
+	/**
+	 * Endpoint AJAX para guardar la segunda página del certificado
+	 */
+	public function ajax_store_second_page() {
+		// Verificar nonce
+		if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( $_POST['_wpnonce'], 'tutor-certificate-two-pages' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed', 'tutor-certificate-student-dni' ) ) );
+			return;
+		}
+		
+		$hash = sanitize_text_field( $_POST['cert_hash'] ?? '' );
+		if ( empty( $hash ) ) {
+			wp_send_json_error( array( 'message' => __( 'Certificate hash is required', 'tutor-certificate-student-dni' ) ) );
+			return;
+		}
+		
+		$completed = function_exists( 'TUTOR_CERT' ) ? ( new \TUTOR_CERT\Certificate( true ) )->completed_course( $hash ) : null;
+		
+		if ( ! $completed ) {
+			wp_send_json_error( array( 'message' => __( 'Course not yet completed', 'tutor-pro' ) ) );
+			return;
+		}
+		
+		// Verificar si hay una imagen
+		if ( ! isset( $_FILES['certificate_image_page2'] ) || $_FILES['certificate_image_page2']['error'] !== UPLOAD_ERR_OK ) {
+			wp_send_json_error( array( 'message' => __( 'Certificate Image Error: ' . ( $_FILES['certificate_image_page2']['error'] ?? 'No file uploaded' ), 'tutor-certificate-student-dni' ) ) );
+			return;
+		}
+		
+		// Verificar el tipo de archivo (puede ser image/jpeg o image/png)
+		$file_type = $_FILES['certificate_image_page2']['type'];
+		if ( ! in_array( $file_type, array( 'image/jpeg', 'image/jpg', 'image/png' ) ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid file type. Expected JPEG or PNG.', 'tutor-certificate-student-dni' ) ) );
+			return;
+		}
+		
+		$certificates_dir = wp_upload_dir()['basedir'] . DIRECTORY_SEPARATOR . 'tutor-certificates';
+		$rand_string = get_comment_meta( $completed->certificate_id, 'tutor_certificate_has_image', true );
+		
+		if ( empty( $rand_string ) ) {
+			wp_send_json_error( array( 'message' => __( 'First page not generated yet', 'tutor-pro' ) ) );
+			return;
+		}
+		
+		// Asegurar que el directorio existe
+		if ( ! wp_mkdir_p( $certificates_dir ) ) {
+			wp_send_json_error( array( 'message' => __( 'Could not create certificates directory', 'tutor-certificate-student-dni' ) ) );
+			return;
+		}
+		
+		$file_dest = $certificates_dir . DIRECTORY_SEPARATOR . $rand_string . '-' . $hash . '-page2.jpg';
+		
+		// Si el archivo ya existe, eliminarlo primero
+		if ( file_exists( $file_dest ) ) {
+			@unlink( $file_dest );
+		}
+		
+		// Mover el archivo
+		if ( ! move_uploaded_file( $_FILES['certificate_image_page2']['tmp_name'], $file_dest ) ) {
+			wp_send_json_error( array( 'message' => __( 'Could not save certificate image', 'tutor-certificate-student-dni' ) ) );
+			return;
+		}
+		
+		// Verificar que el archivo se guardó correctamente
+		if ( ! file_exists( $file_dest ) ) {
+			wp_send_json_error( array( 'message' => __( 'File was not saved correctly', 'tutor-certificate-student-dni' ) ) );
+			return;
+		}
+		
+		wp_send_json_success( array( 
+			'message' => __( 'Second page saved successfully', 'tutor-certificate-student-dni' ),
+			'file_url' => wp_upload_dir()['baseurl'] . '/tutor-certificates/' . $rand_string . '-' . $hash . '-page2.jpg'
+		) );
+	}
+
+	/**
+	 * Encolar script para generar dos páginas del certificado
+	 */
+	public function enqueue_two_page_certificate_script() {
+		// Solo cargar en la página de certificados
+		if ( ! isset( $_GET['cert_hash'] ) || empty( $_GET['cert_hash'] ) ) {
+			return;
+		}
+		
+		// Verificar que existe el elemento del certificado en la página
+		// Esto asegura que estamos en una página de certificado
+		$cert_hash = sanitize_text_field( $_GET['cert_hash'] );
+		if ( empty( $cert_hash ) ) {
+			return;
+		}
+		
+		$script_url = plugin_dir_url( __FILE__ ) . 'assets/js/certificate-two-pages-generator.js';
+		wp_enqueue_script(
+			'tutor-certificate-two-pages-generator',
+			$script_url,
+			array( 'jquery' ),
+			'1.0.1',
+			true
+		);
+		
+		// Pasar datos al JavaScript
+		wp_localize_script( 'tutor-certificate-two-pages-generator', 'tutorTwoPagesCert', array(
+			'ajaxurl' => admin_url( 'admin-ajax.php' ),
+			'nonce' => wp_create_nonce( 'tutor-certificate-two-pages' ),
+			'cert_hash' => $cert_hash,
+		) );
+	}
+
+	/**
+	 * Cargar script para generar PDF con dos páginas
+	 */
+	public function enqueue_certificate_pdf_script() {
+		// Solo cargar en la página de certificados
+		if ( ! isset( $_GET['cert_hash'] ) || empty( $_GET['cert_hash'] ) ) {
+			return;
+		}
+
+		$script_url = plugin_dir_url( __FILE__ ) . 'assets/js/certificate-pdf-two-pages.js';
+		wp_enqueue_script(
+			'tutor-certificate-pdf-two-pages',
+			$script_url,
+			array( 'jquery' ),
+			'1.0.0',
+			true
+		);
+		
+		// Asegurar que se ejecute después de html-to-image.js
+		global $wp_scripts;
+		if ( isset( $wp_scripts->registered['html-to-image'] ) ) {
+			$wp_scripts->registered['tutor-certificate-pdf-two-pages']->deps[] = 'html-to-image';
+		}
+	}
+
+	/**
 	 * Inicializar funcionalidad de búsqueda de certificados
 	 */
 	private function init_certificate_search() {
@@ -543,6 +1063,38 @@ class Tutor_Certificate_Student_DNI {
 				update_option( 'certificate_search_custom_css', wp_unslash( $_POST['certificate_search_css'] ), true );
 			}
 			
+			// Procesar subida de fondo personalizado para la segunda página
+			if ( ! empty( $_FILES['certificate_second_page_background']['name'] ) ) {
+				// Verificar que es una imagen
+				$file_type = wp_check_filetype( $_FILES['certificate_second_page_background']['name'] );
+				$allowed_types = array( 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'gif' => 'image/gif' );
+				
+				if ( in_array( $file_type['type'], $allowed_types ) ) {
+					// Usar la función de WordPress para subir el archivo
+					require_once( ABSPATH . 'wp-admin/includes/file.php' );
+					require_once( ABSPATH . 'wp-admin/includes/image.php' );
+					
+					$upload_overrides = array( 'test_form' => false );
+					$uploaded_file = wp_handle_upload( $_FILES['certificate_second_page_background'], $upload_overrides );
+					
+					if ( $uploaded_file && ! isset( $uploaded_file['error'] ) ) {
+						// Guardar la URL de la imagen
+						update_option( 'certificate_second_page_background_url', $uploaded_file['url'], true );
+						$settings_saved = true;
+					} else {
+						$error_message = isset( $uploaded_file['error'] ) ? $uploaded_file['error'] : __( 'Error al subir la imagen de fondo.', 'tutor-certificate-student-dni' );
+					}
+				} else {
+					$error_message = __( 'El archivo debe ser una imagen (JPG, PNG o GIF).', 'tutor-certificate-student-dni' );
+				}
+			}
+			
+			// Si se envió el campo para eliminar el fondo
+			if ( isset( $_POST['remove_certificate_background'] ) && $_POST['remove_certificate_background'] === '1' ) {
+				delete_option( 'certificate_second_page_background_url' );
+				$settings_saved = true;
+			}
+			
 			// Mostrar mensaje de éxito o error
 			if ( $settings_saved && empty( $error_message ) ) {
 				echo '<div class="notice notice-success is-dismissible"><p><strong>' . esc_html__( '✅ Configuración guardada correctamente.', 'tutor-certificate-student-dni' ) . '</strong></p></div>';
@@ -580,6 +1132,7 @@ class Tutor_Certificate_Student_DNI {
 		// Cuando está vacío, se usará la ruta de Tutor LMS por defecto en las funciones
 		
 		$certificate_custom_css = get_option( 'certificate_search_custom_css', $this->get_default_certificate_search_css() );
+		$certificate_background_url = get_option( 'certificate_second_page_background_url', '' );
 		
 		// Obtener información de la página de certificados de Tutor LMS
 		$tutor_certificate_page_id = 0;
@@ -600,7 +1153,7 @@ class Tutor_Certificate_Student_DNI {
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Configuración de Certificados', 'tutor-certificate-student-dni' ); ?></h1>
-			<form method="POST" action="">
+			<form method="POST" action="" enctype="multipart/form-data">
 				<?php wp_nonce_field( 'certificate_search_settings' ); ?>
 				<h2><?php esc_html_e( 'Configuración General', 'tutor-certificate-student-dni' ); ?></h2>
 				
@@ -661,6 +1214,30 @@ class Tutor_Certificate_Student_DNI {
 						<?php endif; ?>
 						<br><em><?php esc_html_e( 'Si configuras una ruta nueva arriba, esta se cambiará automáticamente.', 'tutor-certificate-student-dni' ); ?></em>
 					<?php endif; ?>
+				</p>
+
+				<h2><?php esc_html_e( 'Fondo Personalizado para Segunda Página', 'tutor-certificate-student-dni' ); ?></h2>
+				<p class="description">
+					<?php esc_html_e( 'Sube una imagen de fondo personalizada que se usará en la segunda página del certificado (página del temario). Si no subes ninguna imagen, se usará el fondo original del certificado.', 'tutor-certificate-student-dni' ); ?>
+				</p>
+				
+				<?php if ( ! empty( $certificate_background_url ) ) : ?>
+					<div style="margin: 15px 0; padding: 15px; background: #f0f0f0; border: 1px solid #ddd; border-radius: 4px;">
+						<p><strong><?php esc_html_e( '✅ Fondo personalizado configurado:', 'tutor-certificate-student-dni' ); ?></strong></p>
+						<img src="<?php echo esc_url( $certificate_background_url ); ?>" alt="<?php esc_attr_e( 'Fondo personalizado', 'tutor-certificate-student-dni' ); ?>" style="max-width: 300px; max-height: 200px; border: 1px solid #ccc; margin: 10px 0;" />
+						<p>
+							<label>
+								<input type="checkbox" name="remove_certificate_background" value="1" />
+								<?php esc_html_e( 'Eliminar fondo personalizado y usar el fondo original del certificado', 'tutor-certificate-student-dni' ); ?>
+							</label>
+						</p>
+					</div>
+				<?php endif; ?>
+				
+				<label for="certificate_second_page_background"><strong><?php esc_html_e( 'Subir Imagen de Fondo:', 'tutor-certificate-student-dni' ); ?></strong></label>
+				<input type="file" id="certificate_second_page_background" name="certificate_second_page_background" accept="image/jpeg,image/jpg,image/png,image/gif" />
+				<p class="description">
+					<?php esc_html_e( 'Formatos permitidos: JPG, PNG, GIF. Se recomienda usar una imagen con las mismas dimensiones que el certificado.', 'tutor-certificate-student-dni' ); ?>
 				</p>
 
 				<h2><?php esc_html_e( 'Shortcode', 'tutor-certificate-student-dni' ); ?></h2>
@@ -1357,13 +1934,13 @@ class Tutor_Certificate_Student_DNI {
 	 * Inicializar campos de perfil de usuario
 	 */
 	private function init_user_profile_fields() {
-		// Agregar campo DNI justo después de la sección "Name" - wp-admin
-		// Usar prioridad baja para que se ejecute temprano, luego JavaScript lo moverá
-		add_action( 'show_user_profile', array( $this, 'add_dni_field_after_name' ), 5 );
-		add_action( 'edit_user_profile', array( $this, 'add_dni_field_after_name' ), 5 );
+		// Agregar campo DNI ANTES del campo first_name - wp-admin
+		// Usar prioridad alta para que se ejecute después de que WordPress agregue los campos
+		add_action( 'show_user_profile', array( $this, 'add_dni_field_before_name' ), 25 );
+		add_action( 'edit_user_profile', array( $this, 'add_dni_field_before_name' ), 25 );
 
 		// Agregar campo DNI en el formulario de nuevo usuario - wp-admin
-		add_action( 'user_new_form', array( $this, 'add_dni_field_new_user' ), 20 );
+		add_action( 'user_new_form', array( $this, 'add_dni_field_new_user' ), 25 );
 
 		// Agregar JavaScript para mover el campo DNI después del nombre y eliminar duplicados
 		add_action( 'admin_footer', array( $this, 'add_dni_field_script' ) );
@@ -1418,11 +1995,11 @@ class Tutor_Certificate_Student_DNI {
 	}
 
 	/**
-	 * Agregar campo DNI justo después de la sección "Name" (wp-admin)
+	 * Agregar campo DNI ANTES del campo first_name (wp-admin)
 	 *
 	 * @param WP_User $user Objeto de usuario
 	 */
-	public function add_dni_field_after_name( $user ) {
+	public function add_dni_field_before_name( $user ) {
 		// Solo mostrar en wp-admin
 		if ( ! is_admin() ) {
 			return;
@@ -1437,10 +2014,9 @@ class Tutor_Certificate_Student_DNI {
 			}
 		}
 
-		// Agregar el campo dentro de la tabla "Name" usando JavaScript
-		// Primero lo agregamos oculto y luego JavaScript lo moverá a la posición correcta
+		// Agregar el campo - JavaScript lo moverá a la posición correcta (antes de first_name)
 		?>
-		<tr class="user-dni-wrap" style="display:none;">
+		<tr class="user-dni-wrap">
 			<th>
 				<label for="user_dni"><?php esc_html_e( 'DNI', 'tutor-certificate-student-dni' ); ?></label>
 			</th>
@@ -1476,7 +2052,7 @@ class Tutor_Certificate_Student_DNI {
 			return;
 		}
 		?>
-		<tr class="form-field user-dni-wrap" style="display:none;">
+		<tr class="form-field user-dni-wrap">
 			<th scope="row">
 				<label for="user_dni"><?php esc_html_e( 'DNI', 'tutor-certificate-student-dni' ); ?></label>
 			</th>
@@ -1638,10 +2214,30 @@ class Tutor_Certificate_Student_DNI {
 					return;
 				}
 				
-				// Ocultar el campo mientras lo movemos
-				dniRow.css('display', 'none');
+				// Buscar el campo first_name
+				var firstNameInput = $('#first_name');
+				if (!firstNameInput.length) {
+					firstNameInput = $('input[name="first_name"]');
+				}
 				
-				// Buscar h2 "Name" o "Nombre"
+				if (firstNameInput.length) {
+					var firstNameRow = firstNameInput.closest('tr');
+					if (firstNameRow.length) {
+						// Verificar si el DNI ya está antes del first_name
+						var dniInSameTable = dniRow.closest('table.form-table')[0] === firstNameRow.closest('table.form-table')[0];
+						var dniBeforeFirst = dniInSameTable && dniRow.index() < firstNameRow.index();
+						
+						if (!dniBeforeFirst) {
+							// Mover el DNI ANTES del campo first_name
+							dniRow.detach();
+							firstNameRow.before(dniRow);
+						}
+						dniRow.css('display', '');
+						return;
+					}
+				}
+				
+				// Fallback: buscar tabla "Name" y ponerlo como primera fila
 				var nameTable = null;
 				$('h2').each(function() {
 					var $h2 = $(this);
@@ -1677,13 +2273,9 @@ class Tutor_Certificate_Student_DNI {
 						} else {
 							tbody.prepend(dniRow);
 						}
-						dniRow.css('display', '');
-					} else {
-						dniRow.css('display', '');
 					}
-				} else {
-					dniRow.css('display', '');
 				}
+				dniRow.css('display', '');
 			}
 			
 			// Intentar mover inmediatamente
@@ -1766,9 +2358,31 @@ class Tutor_Certificate_Student_DNI {
 				dniInput.attr('name', 'user_dni');
 				dniInput.attr('id', 'user_dni');
 				
-				// ESTRATEGIA PRINCIPAL: Buscar h2 "Name" o "Nombre" y la tabla que le sigue inmediatamente
+				// ESTRATEGIA PRINCIPAL: Buscar el campo first_name y poner el DNI ANTES de él
+				var firstNameInput = $('#first_name');
+				if (!firstNameInput.length) {
+					firstNameInput = $('input[name="first_name"]');
+				}
+				
+				if (firstNameInput.length) {
+					var firstNameRow = firstNameInput.closest('tr');
+					if (firstNameRow.length) {
+						// Verificar si el DNI ya está antes del first_name
+						var dniInSameTable = dniRow.closest('table.form-table')[0] === firstNameRow.closest('table.form-table')[0];
+						var dniBeforeFirst = dniInSameTable && dniRow.index() < firstNameRow.index();
+						
+						if (!dniBeforeFirst) {
+							// Mover el DNI ANTES del campo first_name
+							dniRow.detach();
+							firstNameRow.before(dniRow);
+						}
+						dniRow.css('display', '');
+						return true;
+					}
+				}
+				
+				// ESTRATEGIA FALLBACK: Buscar h2 "Name" o "Nombre" y la tabla que le sigue inmediatamente
 				var nameTable = null;
-				var nameHeading = null;
 				
 				// Buscar todos los h2 y encontrar el que dice "Name" o "Nombre"
 				$('h2').each(function() {
@@ -1777,8 +2391,6 @@ class Tutor_Certificate_Student_DNI {
 					
 					// Verificar si es el h2 "Name" o "Nombre"
 					if (text === 'Name' || text === 'Nombre') {
-						nameHeading = $h2;
-						
 						// Buscar la tabla que está JUSTO DESPUÉS del h2
 						var $nextElement = $h2.next();
 						
@@ -1839,70 +2451,28 @@ class Tutor_Certificate_Student_DNI {
 					return true;
 				}
 				
-				// ESTRATEGIA FALLBACK 1: Buscar directamente la tabla con first_name (funciona en profile.php y user-new.php)
-				var firstNameInput = $('#first_name');
-				if (!firstNameInput.length) {
-					firstNameInput = $('input[name="first_name"]');
-				}
-				
-				if (firstNameInput.length) {
-					var firstNameRow = firstNameInput.closest('tr');
-					if (firstNameRow.length) {
-						var nameTable = firstNameRow.closest('table.form-table');
-						if (nameTable.length) {
-							var tbody = nameTable.find('tbody');
-							if (!tbody.length) {
-								tbody = nameTable;
-							}
-							
-							// Verificar si el DNI ya está en la primera posición
-							var firstRow = tbody.find('tr').first();
-							if (firstRow.hasClass('user-dni-wrap') && dniRow.closest('table.form-table')[0] === nameTable[0]) {
-								dniRow.css('display', '');
-								return true;
-							}
-							
-							// Remover y mover
-							dniRow.detach();
-							if (firstRow.length && !firstRow.hasClass('user-dni-wrap')) {
-								firstRow.before(dniRow);
-							} else {
-								tbody.prepend(dniRow);
-							}
-							
-							// Mostrar el campo
-							dniRow.css('display', '');
-							
-							return true;
-						}
-					}
-				}
-				
-				// ESTRATEGIA FALLBACK 1.5: Para user-new.php, buscar también por form-field
-				if (!nameTable || !nameTable.length) {
-					var firstNameRowByClass = $('tr.form-field').has('input#first_name, input[name="first_name"]').first();
-					if (firstNameRowByClass.length) {
-						var nameTable = firstNameRowByClass.closest('table.form-table');
-						if (nameTable.length) {
-							var tbody = nameTable.find('tbody');
-							if (!tbody.length) {
-								tbody = nameTable;
-							}
-							var firstRow = tbody.find('tr').first();
-							if (!firstRow.hasClass('user-dni-wrap')) {
-								dniRow.detach();
-								firstRow.before(dniRow);
-								dniRow.css('display', '');
-								return true;
-							}
-						}
-					}
-				}
-				
 				// ESTRATEGIA FALLBACK 2: Buscar cualquier tabla form-table que contenga campos de nombre
 				$('table.form-table').each(function() {
 					var $table = $(this);
 					if ($table.find('input#first_name, input[name="first_name"], tr.user-first-name-wrap, tr.user-last-name-wrap').length) {
+						var firstNameInput = $table.find('input#first_name, input[name="first_name"]').first();
+						if (firstNameInput.length) {
+							var firstNameRow = firstNameInput.closest('tr');
+							if (firstNameRow.length) {
+								// Verificar si el DNI ya está antes del first_name
+								var dniInSameTable = dniRow.closest('table.form-table')[0] === $table[0];
+								var dniBeforeFirst = dniInSameTable && dniRow.index() < firstNameRow.index();
+								
+								if (!dniBeforeFirst) {
+									// Mover el DNI ANTES del campo first_name
+									dniRow.detach();
+									firstNameRow.before(dniRow);
+								}
+								dniRow.css('display', '');
+								return false; // break
+							}
+						}
+						
 						var tbody = $table.find('tbody');
 						if (!tbody.length) {
 							tbody = $table;
@@ -1920,94 +2490,15 @@ class Tutor_Certificate_Student_DNI {
 					}
 				});
 				
+				// Si llegamos aquí, mostrar el campo de todas formas
+				dniRow.css('display', '');
 				return false;
 			}
-			
-			// Función para verificar y corregir la posición del DNI
-			function checkAndMoveDniField() {
-				var dniRow = $('.user-dni-wrap').first();
-				if (!dniRow.length) {
-					return;
-				}
-				
-				// Buscar h2 "Name" o "Nombre" y su tabla
-				var nameTable = null;
-				
-				$('h2').each(function() {
-					var $h2 = $(this);
-					var text = $h2.text().trim();
-					if (text === 'Name' || text === 'Nombre') {
-						// Buscar la tabla que está justo después del h2
-						var $nextElement = $h2.next();
-						if ($nextElement.is('table.form-table')) {
-							nameTable = $nextElement;
-							return false;
-						}
-						
-						$h2.nextAll().each(function() {
-							var $elem = $(this);
-							if ($elem.is('table.form-table') && $elem.find('input#first_name, input[name="first_name"], tr.user-first-name-wrap').length) {
-								nameTable = $elem;
-								return false;
-							}
-						});
-						return false;
-					}
-				});
-				
-				// Si no se encontró, buscar directamente por first_name
-				if (!nameTable || !nameTable.length) {
-					var firstNameInput = $('#first_name, input[name="first_name"]').first();
-					if (firstNameInput.length) {
-						nameTable = firstNameInput.closest('table.form-table');
-					}
-				}
-				
-				if (nameTable && nameTable.length) {
-					var tbody = nameTable.find('tbody');
-					if (!tbody.length) {
-						tbody = nameTable;
-					}
-					
-					var firstRow = tbody.find('tr').first();
-					
-					// Verificar si el DNI está en la posición correcta
-					var isInCorrectTable = dniRow.closest('table.form-table')[0] === nameTable[0];
-					var isFirstRow = firstRow.hasClass('user-dni-wrap');
-					
-					// Si no está en la posición correcta, moverlo
-					if (!isFirstRow || !isInCorrectTable) {
-						moveDniField();
-					}
-				} else {
-					// Si no se encontró la tabla, intentar mover de todas formas
-					moveDniField();
-				}
-			}
-			
-			// Ejecutar inmediatamente
-			moveDniField();
-			
-			// Ejecutar cuando el DOM esté listo
-			$(document).ready(function() {
-				setTimeout(function() {
-					moveDniField();
-					// Verificar cada 200ms durante los primeros 3 segundos
-					var checkInterval = setInterval(function() {
-						checkAndMoveDniField();
-					}, 200);
-					
-					setTimeout(function() {
-						clearInterval(checkInterval);
-					}, 3000);
-				}, 100);
-			});
 			
 			// Ejecutar cuando la página esté completamente cargada
 			$(window).on('load', function() {
 				setTimeout(function() {
 					moveDniField();
-					checkAndMoveDniField();
 				}, 200);
 			});
 			
@@ -2023,7 +2514,7 @@ class Tutor_Certificate_Student_DNI {
 					
 					if (shouldCheck) {
 						setTimeout(function() {
-							checkAndMoveDniField();
+							moveDniField();
 						}, 50);
 					}
 				});
@@ -2036,7 +2527,7 @@ class Tutor_Certificate_Student_DNI {
 			
 			// También verificar periódicamente (cada 500ms) durante los primeros 5 segundos
 			var periodicCheck = setInterval(function() {
-				checkAndMoveDniField();
+				moveDniField();
 			}, 500);
 			
 			setTimeout(function() {
