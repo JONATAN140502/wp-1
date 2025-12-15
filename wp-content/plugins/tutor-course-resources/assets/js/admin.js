@@ -122,10 +122,16 @@ jQuery(document).ready(function($) {
 		$('#folder-lessons-wrapper').hide(); // Ocultar lecciones inicialmente
 		$('#folder-lesson-ids').html('');
 		
+		// Verificar si hay cursos disponibles en el select
+		var courseSelect = $('#folder-course-id');
+		var courseOptions = courseSelect.find('option').length;
+		console.log('Cursos disponibles en el select:', courseOptions);
+		
 		// Verificar si hay un curso ya seleccionado (heredado de carpeta padre)
 		setTimeout(function() {
 			var parentCourseId = $('#folder-course-id').val();
-			if (parentCourseId && parentCourseId != 0) {
+			console.log('Curso padre detectado:', parentCourseId);
+			if (parentCourseId && parentCourseId != 0 && parentCourseId != '0') {
 				loadLessonsForCourse(parentCourseId, 'folder-lesson-ids', []);
 			}
 		}, 300);
@@ -291,16 +297,19 @@ jQuery(document).ready(function($) {
 			selectedLessons = $('#folder-lesson-ids').val() || [];
 		}
 		
-		console.log('Curso seleccionado:', courseId);
+		console.log('Curso seleccionado en el select:', courseId);
+		console.log('Tipo de cursoId:', typeof courseId);
 		
 		// Si no hay curso seleccionado, ocultar el campo de lecciones
-		if (!courseId || courseId == 0 || courseId == '0') {
+		if (!courseId || courseId == 0 || courseId == '0' || courseId === '') {
+			console.log('No hay curso seleccionado, ocultando lecciones');
 			$('#folder-lessons-wrapper').hide();
 			$('#folder-lesson-ids').html('');
 			return;
 		}
 		
 		// Cargar las lecciones del curso
+		console.log('Cargando lecciones para el curso:', courseId);
 		loadLessonsForCourse(courseId, 'folder-lesson-ids', selectedLessons);
 	});
 	

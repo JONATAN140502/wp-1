@@ -1,11 +1,11 @@
 <?php
 /**
- * Plugin Name: TUTOR ADDON
- * Plugin URI: https://monstruocreativo.com/
+ * Plugin Name: Tutor Course Session URL
+ * Plugin URI: https://www.emr.codes
  * Description: Añade un campo para URL de sesión (Meet/Zoom) a los cursos de Tutor LMS sin modificar el código del plugin principal.
  * Version: 1.0.0
- * Author: MOUNSTRO CREATIVO
- * Author URI: https://monstruocreativo.com/
+ * Author: EMR CODES
+ * Author URI: https://www.emr.codes
  * Text Domain: tutor-course-url-sesion
  * Domain Path: /languages
  * Requires at least: 5.0

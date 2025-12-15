@@ -1,11 +1,11 @@
 <?php
 /**
  * Plugin Name: Tutor Certificate Student DNI
- * Plugin URI: https://example.com
+ * Plugin URI: https://www.emr.codes
  * Description: Agrega el campo DNI del estudiante al constructor de certificados de Tutor LMS sin modificar el plugin original
  * Version: 1.0.0
- * Author: Tu Nombre
- * Author URI: https://example.com
+ * Author: EMR CODES
+ * Author URI: https://www.emr.codes
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: tutor-certificate-student-dni

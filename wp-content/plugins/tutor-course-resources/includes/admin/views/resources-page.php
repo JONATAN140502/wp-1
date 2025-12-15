@@ -114,6 +114,24 @@ $instructors = get_users( array( 'role' => 'tutor_instructor' ) );
 						$course = get_post( $folder->course_id );
 						$course_name = $course ? $course->post_title : '';
 					}
+					
+					// Obtener información del creador
+					$creator = null;
+					$creator_name = '';
+					$creator_email = '';
+					if ( ! empty( $folder->created_by ) ) {
+						$creator = get_userdata( $folder->created_by );
+						if ( $creator ) {
+							$creator_name = $creator->display_name ? $creator->display_name : $creator->user_login;
+							$creator_email = $creator->user_email;
+						}
+					}
+					
+					// Formatear fecha de creación
+					$created_date = '';
+					if ( ! empty( $folder->created_at ) ) {
+						$created_date = date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $folder->created_at ) );
+					}
 				?>
 					<div class="drive-item folder-item" data-item-id="<?php echo esc_attr( $folder->id ); ?>" data-item-type="folder">
 						<div class="item-checkbox" style="display: none;">
@@ -125,15 +143,24 @@ $instructors = get_users( array( 'role' => 'tutor_instructor' ) );
 						<div class="item-name" title="<?php echo esc_attr( $folder->name ); ?>">
 							<?php echo esc_html( $folder->name ); ?>
 						</div>
-						<?php if ( $course_name ) : ?>
-							<div class="item-meta">
+						<div class="item-meta">
+							<?php if ( $course_name ) : ?>
 								<span class="course-badge"><?php echo esc_html( $course_name ); ?></span>
-							</div>
-						<?php elseif ( $folder->is_libre ) : ?>
-							<div class="item-meta">
+							<?php elseif ( $folder->is_libre ) : ?>
 								<span class="libre-badge"><?php esc_html_e( 'Libre', 'tutor-course-resources' ); ?></span>
-							</div>
-						<?php endif; ?>
+							<?php endif; ?>
+							<?php if ( $creator_name ) : ?>
+								<span class="creator-info" title="<?php echo esc_attr( sprintf( __( 'Creado por: %s (%s)', 'tutor-course-resources' ), $creator_name, $creator_email ) ); ?>" style="margin-left: 8px; color: #666; font-size: 12px;">
+									<span class="dashicons dashicons-admin-users" style="font-size: 14px; vertical-align: middle;"></span>
+									<?php echo esc_html( $creator_name ); ?>
+								</span>
+							<?php endif; ?>
+							<?php if ( $created_date ) : ?>
+								<span class="created-date" style="margin-left: 8px; color: #999; font-size: 11px;">
+									<?php echo esc_html( $created_date ); ?>
+								</span>
+							<?php endif; ?>
+						</div>
 						<div class="item-actions">
 							<a href="<?php echo esc_url( $folder_url ); ?>" class="item-action" title="<?php esc_attr_e( 'Abrir', 'tutor-course-resources' ); ?>">
 								<span class="dashicons dashicons-visibility"></span>
@@ -182,6 +209,35 @@ $instructors = get_users( array( 'role' => 'tutor_instructor' ) );
 					}
 					
 					if ( empty( $file_url ) ) continue;
+					
+					// Obtener información del creador
+					$creator = null;
+					$creator_name = '';
+					$creator_email = '';
+					if ( ! empty( $resource->created_by ) ) {
+						$creator = get_userdata( $resource->created_by );
+						if ( $creator ) {
+							$creator_name = $creator->display_name ? $creator->display_name : $creator->user_login;
+							$creator_email = $creator->user_email;
+						}
+					}
+					
+					// Formatear fecha de creación
+					$created_date = '';
+					if ( ! empty( $resource->created_at ) ) {
+						$created_date = date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $resource->created_at ) );
+					}
+					
+					// Obtener tamaño del archivo
+					$file_size = '';
+					if ( $resource->file_id ) {
+						$file_path = get_attached_file( $resource->file_id );
+						if ( $file_path && file_exists( $file_path ) ) {
+							$file_size = size_format( filesize( $file_path ) );
+						}
+					} elseif ( $resource->resource_type === 'drive' ) {
+						$file_size = __( 'Enlace externo', 'tutor-course-resources' );
+					}
 				?>
 					<div class="drive-item file-item" data-item-id="<?php echo esc_attr( $resource->id ); ?>" data-item-type="resource">
 						<div class="item-checkbox" style="display: none;">
@@ -194,16 +250,20 @@ $instructors = get_users( array( 'role' => 'tutor_instructor' ) );
 							<?php echo esc_html( $resource->title ); ?>
 						</div>
 						<div class="item-meta">
-							<span class="file-size">
-								<?php 
-								if ( $resource->file_id ) {
-									$file_path = get_attached_file( $resource->file_id );
-									if ( $file_path && file_exists( $file_path ) ) {
-										echo esc_html( size_format( filesize( $file_path ) ) );
-									}
-								}
-								?>
-							</span>
+							<?php if ( $file_size ) : ?>
+								<span class="file-size"><?php echo esc_html( $file_size ); ?></span>
+							<?php endif; ?>
+							<?php if ( $creator_name ) : ?>
+								<span class="creator-info" title="<?php echo esc_attr( sprintf( __( 'Creado por: %s (%s)', 'tutor-course-resources' ), $creator_name, $creator_email ) ); ?>" style="margin-left: 8px; color: #666; font-size: 12px;">
+									<span class="dashicons dashicons-admin-users" style="font-size: 14px; vertical-align: middle;"></span>
+									<?php echo esc_html( $creator_name ); ?>
+								</span>
+							<?php endif; ?>
+							<?php if ( $created_date ) : ?>
+								<span class="created-date" style="margin-left: 8px; color: #999; font-size: 11px;">
+									<?php echo esc_html( $created_date ); ?>
+								</span>
+							<?php endif; ?>
 						</div>
 						<div class="item-actions">
 							<a href="<?php echo esc_url( $file_url ); ?>" target="_blank" class="item-action" title="<?php esc_attr_e( 'Abrir', 'tutor-course-resources' ); ?>">

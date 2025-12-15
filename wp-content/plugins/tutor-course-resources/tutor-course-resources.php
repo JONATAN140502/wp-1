@@ -4,8 +4,8 @@
  * Plugin URI: https://example.com/tutor-course-resources
  * Description: Gestión de recursos de curso con Google Drive y archivos físicos para Tutor LMS. Control de acceso por roles y notificaciones.
  * Version: 1.0.0
- * Author: Tu Nombre
- * Author URI: https://example.com
+ * Author: EMR CODES
+ * Author URI: https://www.emr.codes
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: tutor-course-resources
@@ -291,9 +291,28 @@ class Tutor_Course_Resources {
 		add_action( 'tutor_course/single/enrolled/before/inner-wrap', array( $this, 'display_course_resources_frontend' ), 10 );
 		add_action( 'tutor_course/single/before/inner-wrap', array( $this, 'display_course_resources_frontend' ), 10 );
 		
-		// Agregar recursos en lecciones
-		add_action( 'tutor_lesson/single/content/after', array( $this, 'display_lesson_resources_frontend' ), 10 );
-		add_action( 'tutor_lesson/single/after/content', array( $this, 'display_lesson_resources_frontend' ), 10 );
+		// Agregar recursos en lecciones - DESHABILITADO: ahora se muestran en la pestaña "Otros archivos"
+		// add_action( 'tutor_lesson/single/content/after', array( $this, 'display_lesson_resources_frontend' ), 10 );
+		// add_action( 'tutor_lesson/single/after/content', array( $this, 'display_lesson_resources_frontend' ), 10 );
+		
+		// Agregar pestaña "Otros archivos" en las lecciones
+		// Agregar recursos del gestor al tab "Files" existente
+		add_action( 'tutor_global/after/attachments', array( $this, 'display_resources_in_files_tab' ), 10 );
+		
+		// Interceptar ANTES de que Tutor LMS busque el template - usar prioridad muy alta
+		add_filter( 'tutor_get_template_path', array( $this, 'register_template_path' ), 1, 2 );
+		
+		// Interceptar antes de que Tutor LMS busque el template para forzar nuestra ruta
+		add_action( 'tutor_load_template_before', array( $this, 'intercept_template_before_load' ), 5, 2 );
+		
+		// Interceptar después de cargar el template para asegurar que nuestro template se cargue
+		add_action( 'tutor_load_template_after', array( $this, 'ensure_template_loaded' ), 10, 2 );
+		
+		// Ocultar mensaje de error si el template existe en nuestro plugin
+		add_filter( 'tutor_not_found_template_warning_msg', array( $this, 'hide_template_error_if_exists' ), 10, 1 );
+		
+		// Interceptar cuando el template no se encuentra para cargar el nuestro
+		add_action( 'tutor_after_template_not_found', array( $this, 'load_plugin_template_if_exists' ), 10, 1 );
 		
 		// Filtro para modificar tipos de archivo permitidos en Tutor LMS
 		add_filter( 'upload_mimes', array( $this, 'allow_all_file_types' ), 999 );
@@ -301,7 +320,8 @@ class Tutor_Course_Resources {
 		
 		// Agregar menús al dashboard de Tutor LMS
 		add_filter( 'tutor_dashboard/instructor_nav_items', array( $this, 'add_instructor_resources_menu' ) );
-		add_filter( 'tutor_dashboard/nav_items', array( $this, 'add_student_resources_menu' ) );
+		// Menú de recursos para estudiantes deshabilitado - los recursos se ven desde las clases del curso
+		// add_filter( 'tutor_dashboard/nav_items', array( $this, 'add_student_resources_menu' ) );
 		
 		// Cargar templates del dashboard
 		add_action( 'load_dashboard_template_part_from_other_location', array( $this, 'load_dashboard_templates' ) );
@@ -419,7 +439,7 @@ class Tutor_Course_Resources {
 		$dashboard_page_id = tutor_utils()->get_option( 'tutor_dashboard_page_id' );
 		$is_dashboard = is_page( $dashboard_page_id );
 		$dashboard_page = isset( $wp_query->query_vars['tutor_dashboard_page'] ) ? $wp_query->query_vars['tutor_dashboard_page'] : '';
-		$is_resources_page = $dashboard_page === 'course-resources' || $dashboard_page === 'my-resources';
+		$is_resources_page = $dashboard_page === 'course-resources'; // my-resources deshabilitado para estudiantes
 		
 		if ( $is_dashboard && $is_resources_page ) {
 			wp_enqueue_style( 'tutor-course-resources-frontend', TUTOR_COURSE_RESOURCES_PLUGIN_URL . 'assets/css/frontend.css', array(), TUTOR_COURSE_RESOURCES_VERSION );
@@ -605,24 +625,80 @@ class Tutor_Course_Resources {
 		}
 		
 		// Acceso de docentes
-		if ( $is_instructor && $resource->access_teachers ) {
-			// Verificar si el docente tiene acceso específico
-			$allowed_teachers = ! empty( $resource->access_teachers_list ) ? explode( ',', $resource->access_teachers_list ) : array();
-			
-			// Si la lista está vacía, todos los docentes tienen acceso
-			if ( empty( $resource->access_teachers_list ) ) {
-				return true;
-			}
-			
-			// Verificar si el docente está en la lista
-			if ( in_array( $user_id, $allowed_teachers ) ) {
-				return true;
-			}
-			
-			// Verificar si es el creador del recurso
+		if ( $is_instructor ) {
+			// Si el docente es el creador del recurso, siempre tiene acceso
 			if ( $resource->created_by == $user_id ) {
 				return true;
 			}
+			
+			// Si el recurso tiene un curso asociado, verificar que el docente sea instructor de ese curso
+			if ( $resource->course_id > 0 ) {
+				$is_course_instructor = false;
+				
+				// Verificar si es el autor principal del curso
+				$course = get_post( $resource->course_id );
+				if ( $course && $course->post_author == $user_id ) {
+					$is_course_instructor = true;
+				}
+				
+				// Verificar si es co-instructor usando Tutor LMS
+				if ( ! $is_course_instructor && function_exists( 'tutor_utils' ) ) {
+					$is_course_instructor = tutor_utils()->is_instructor_of_this_course( $user_id, $resource->course_id );
+				}
+				
+				// Si no es instructor del curso, no tiene acceso (a menos que esté en la lista de docentes permitidos)
+				if ( ! $is_course_instructor ) {
+					// Verificar si tiene acceso específico mediante access_teachers
+					if ( $resource->access_teachers ) {
+						$allowed_teachers = ! empty( $resource->access_teachers_list ) ? explode( ',', $resource->access_teachers_list ) : array();
+						
+						// Solo dar acceso si está explícitamente en la lista
+						if ( ! empty( $resource->access_teachers_list ) && in_array( $user_id, array_map( 'intval', $allowed_teachers ) ) ) {
+							return true;
+						}
+					}
+					return false;
+				}
+				
+				// Si es instructor del curso, verificar permisos de acceso de docentes
+				if ( $resource->access_teachers ) {
+					$allowed_teachers = ! empty( $resource->access_teachers_list ) ? explode( ',', $resource->access_teachers_list ) : array();
+					
+					// Si la lista está vacía, todos los instructores del curso tienen acceso
+					if ( empty( $resource->access_teachers_list ) ) {
+						return true;
+					}
+					
+					// Si hay lista, verificar que esté en ella
+					if ( in_array( $user_id, array_map( 'intval', $allowed_teachers ) ) ) {
+						return true;
+					}
+					
+					// Si no está en la lista, no tiene acceso
+					return false;
+				}
+				
+				// Si access_teachers está desactivado, el instructor del curso no tiene acceso
+				return false;
+			}
+			
+			// Si el recurso no tiene curso asociado, verificar acceso de docentes
+			if ( $resource->access_teachers ) {
+				$allowed_teachers = ! empty( $resource->access_teachers_list ) ? explode( ',', $resource->access_teachers_list ) : array();
+				
+				// Si la lista está vacía, todos los docentes tienen acceso
+				if ( empty( $resource->access_teachers_list ) ) {
+					return true;
+				}
+				
+				// Si hay lista, verificar que esté en ella
+				if ( in_array( $user_id, array_map( 'intval', $allowed_teachers ) ) ) {
+					return true;
+				}
+			}
+			
+			// Si access_teachers está desactivado o no está en la lista, no tiene acceso
+			return false;
 		}
 		
 		return false;
@@ -729,6 +805,316 @@ class Tutor_Course_Resources {
 		}
 		
 		include TUTOR_COURSE_RESOURCES_PLUGIN_DIR . 'templates/frontend/lesson-resources.php';
+	}
+	
+	/**
+	 * Mostrar recursos del gestor en el tab "Files" existente
+	 */
+	public function display_resources_in_files_tab() {
+		// Solo mostrar en páginas de lección
+		if ( ! is_singular( 'lesson' ) ) {
+			return;
+		}
+		
+		global $post;
+		if ( ! $post ) {
+			return;
+		}
+		
+		$lesson_id = $post->ID;
+		
+		// Obtener el curso padre de la lección
+		$course_id = 0;
+		if ( function_exists( 'tutor_utils' ) ) {
+			$course_id = tutor_utils()->get_course_id_by_content( $lesson_id );
+		}
+		
+		if ( ! $course_id ) {
+			return;
+		}
+		
+		// Obtener recursos relacionados específicamente con esta lección
+		$lesson_resources = array();
+		if ( $course_id && $lesson_id ) {
+			$lesson_resources = $this->get_resources_by_lesson( $lesson_id );
+			
+			// También obtener recursos del curso que no estén asociados a lecciones específicas
+			$course_resources = $this->get_course_resources( $course_id, 0 );
+		} else {
+			$course_resources = array();
+		}
+		
+		// Combinar y filtrar recursos duplicados
+		$all_resources = array();
+		$resource_ids = array();
+		
+		// Primero agregar recursos específicos de la lección
+		foreach ( $lesson_resources as $resource ) {
+			if ( ! in_array( $resource->id, $resource_ids ) ) {
+				$all_resources[] = $resource;
+				$resource_ids[] = $resource->id;
+			}
+		}
+		
+		// Luego agregar recursos del curso que no tengan lecciones asociadas
+		foreach ( $course_resources as $resource ) {
+			$resource_lessons = $this->get_resource_lessons( $resource->id );
+			
+			// Si el recurso no tiene lecciones asociadas, mostrarlo en todas las lecciones del curso
+			if ( empty( $resource_lessons ) ) {
+				if ( ! in_array( $resource->id, $resource_ids ) ) {
+					$all_resources[] = $resource;
+					$resource_ids[] = $resource->id;
+				}
+			}
+		}
+		
+		// Filtrar recursos por acceso
+		$accessible_resources = array();
+		foreach ( $all_resources as $resource ) {
+			if ( $this->can_user_access_resource( $resource ) ) {
+				$accessible_resources[] = $resource;
+			}
+		}
+		
+		// Si hay recursos accesibles, mostrarlos
+		if ( ! empty( $accessible_resources ) ) {
+			?>
+			<div class="tutor-course-resources-manager-files" style="margin-top: 30px;">
+				<div class="tutor-fs-5 tutor-fw-medium tutor-color-black tutor-mb-16"><?php esc_html_e( 'Recursos Extras', 'tutor-course-resources' ); ?></div>
+				<div class="tutor-course-attachments tutor-row">
+					<?php foreach ( $accessible_resources as $resource ) : 
+						$file_url = '';
+						if ( $resource->resource_type === 'file' && $resource->file_id ) {
+							$file_url = wp_get_attachment_url( $resource->file_id );
+						} elseif ( $resource->resource_type === 'drive' && $resource->resource_url ) {
+							$file_url = $resource->resource_url;
+						}
+						
+						if ( empty( $file_url ) ) {
+							continue;
+						}
+						
+						$file_name = $resource->title;
+						$file_size = '';
+						
+						if ( $resource->resource_type === 'file' && $resource->file_id ) {
+							$attachment = get_post( $resource->file_id );
+							if ( $attachment ) {
+								$file_name = $attachment->post_title ? $attachment->post_title : basename( get_attached_file( $resource->file_id ) );
+								$file_path = get_attached_file( $resource->file_id );
+								if ( $file_path && file_exists( $file_path ) ) {
+									$file_size = size_format( filesize( $file_path ) );
+								}
+							}
+						} elseif ( $resource->resource_type === 'drive' ) {
+							$file_name = $resource->title;
+							$file_size = __( 'Enlace externo', 'tutor-course-resources' );
+						}
+					?>
+						<div class="tutor-col-md-6 tutor-mt-16">
+							<div class="tutor-course-attachment tutor-card tutor-card-sm">
+								<div class="tutor-card-body">
+									<div class="tutor-row">
+										<div class="tutor-col tutor-overflow-hidden">
+											<div class="tutor-fs-6 tutor-fw-medium tutor-color-black tutor-text-ellipsis tutor-mb-4"><?php echo esc_html( $file_name ); ?></div>
+											<?php if ( ! empty( $file_size ) ) : ?>
+												<div class="tutor-fs-7 tutor-color-muted"><?php esc_html_e( 'Size', 'tutor' ); ?>: <?php echo esc_html( $file_size ); ?></div>
+											<?php endif; ?>
+											<?php if ( ! empty( $resource->description ) ) : ?>
+												<div class="tutor-fs-7 tutor-color-muted tutor-mt-4"><?php echo esc_html( $resource->description ); ?></div>
+											<?php endif; ?>
+										</div>
+										<div class="tutor-col-auto">
+											<a href="<?php echo esc_url( $file_url ); ?>" class="tutor-iconic-btn tutor-iconic-btn-secondary tutor-stretched-link" target="_blank" <?php echo $resource->resource_type === 'file' ? 'download="' . esc_attr( $file_name ) . '"' : ''; ?>>
+												<span class="tutor-icon-download" area-hidden="true"></span>
+											</a>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					<?php endforeach; ?>
+				</div>
+			</div>
+			<?php
+		}
+	}
+	
+	/**
+	 * Verificar si hay recursos accesibles para una lección
+	 */
+	private function has_accessible_resources_for_lesson( $lesson_id, $course_id ) {
+		// Obtener recursos relacionados específicamente con esta lección
+		$lesson_resources = $this->get_resources_by_lesson( $lesson_id );
+		
+		// También obtener recursos del curso que no estén asociados a lecciones específicas
+		$course_resources = $this->get_course_resources( $course_id, 0 );
+		
+		// Combinar y filtrar recursos duplicados
+		$all_resources = array();
+		$resource_ids = array();
+		
+		// Primero agregar recursos específicos de la lección
+		foreach ( $lesson_resources as $resource ) {
+			if ( ! in_array( $resource->id, $resource_ids ) ) {
+				$all_resources[] = $resource;
+				$resource_ids[] = $resource->id;
+			}
+		}
+		
+		// Luego agregar recursos del curso que no tengan lecciones asociadas
+		foreach ( $course_resources as $resource ) {
+			$resource_lessons = $this->get_resource_lessons( $resource->id );
+			
+			// Si el recurso no tiene lecciones asociadas, mostrarlo en todas las lecciones del curso
+			if ( empty( $resource_lessons ) ) {
+				if ( ! in_array( $resource->id, $resource_ids ) ) {
+					$all_resources[] = $resource;
+					$resource_ids[] = $resource->id;
+				}
+			}
+		}
+		
+		// Filtrar recursos por acceso
+		foreach ( $all_resources as $resource ) {
+			if ( $this->can_user_access_resource( $resource ) ) {
+				return true; // Si hay al menos un recurso accesible, retornar true
+			}
+		}
+		
+		return false;
+	}
+	
+	
+	/**
+	 * Registrar ruta de templates personalizados
+	 */
+	public function register_template_path( $template_location, $template ) {
+		// Si el template es de nuestro plugin, usar nuestra ruta
+		// El $template ya viene con puntos convertidos a DIRECTORY_SEPARATOR
+		if ( strpos( $template, 'tutor-course-resources' ) !== false ) {
+			// Remover el prefijo tutor-course-resources/
+			$template_file = str_replace( 'tutor-course-resources' . DIRECTORY_SEPARATOR, '', $template );
+			$plugin_template = TUTOR_COURSE_RESOURCES_PLUGIN_DIR . 'templates' . DIRECTORY_SEPARATOR . $template_file . '.php';
+			
+			// Normalizar separadores de directorio para Windows
+			$plugin_template = str_replace( array( '/', '\\' ), DIRECTORY_SEPARATOR, $plugin_template );
+			
+			// Si el archivo existe en nuestro plugin, SIEMPRE usarlo (incluso si existe en el tema o no existe)
+			if ( file_exists( $plugin_template ) ) {
+				return $plugin_template;
+			}
+		}
+		
+		return $template_location;
+	}
+	
+	/**
+	 * Interceptar template antes de que Tutor LMS lo busque
+	 */
+	public function intercept_template_before_load( $template, $variables ) {
+		// Si el template es de nuestro plugin, verificar que existe y forzar su carga
+		if ( strpos( $template, 'tutor-course-resources' ) !== false ) {
+			// El template viene con puntos, convertirlos a separadores de directorio
+			$template_file = str_replace( '.', DIRECTORY_SEPARATOR, $template );
+			$template_file = str_replace( 'tutor-course-resources' . DIRECTORY_SEPARATOR, '', $template_file );
+			$plugin_template = TUTOR_COURSE_RESOURCES_PLUGIN_DIR . 'templates' . DIRECTORY_SEPARATOR . $template_file . '.php';
+			$plugin_template = str_replace( array( '/', '\\' ), DIRECTORY_SEPARATOR, $plugin_template );
+			
+			// Verificar que el archivo existe
+			if ( file_exists( $plugin_template ) ) {
+				// El filtro tutor_get_template_path se encargará de devolver la ruta correcta
+				// Pero también podemos forzar la carga directamente aquí si es necesario
+			}
+		}
+	}
+	
+	/**
+	 * Cargar template del plugin si no se encuentra en el tema
+	 */
+	public function load_plugin_template_if_exists( $template ) {
+		// Si el template es de nuestro plugin, cargarlo directamente
+		if ( strpos( $template, 'tutor-course-resources' ) !== false ) {
+			// El template viene con puntos, convertirlos a separadores de directorio
+			$template_file = str_replace( '.', DIRECTORY_SEPARATOR, $template );
+			$template_file = str_replace( 'tutor-course-resources' . DIRECTORY_SEPARATOR, '', $template_file );
+			$plugin_template = TUTOR_COURSE_RESOURCES_PLUGIN_DIR . 'templates' . DIRECTORY_SEPARATOR . $template_file . '.php';
+			$plugin_template = str_replace( array( '/', '\\' ), DIRECTORY_SEPARATOR, $plugin_template );
+			
+			// Si el archivo existe en nuestro plugin, cargarlo directamente
+			if ( file_exists( $plugin_template ) ) {
+				// Obtener las variables del contexto - necesitamos obtenerlas del hook tutor_load_template_before
+				global $post;
+				$course_id = 0;
+				$lesson_id = isset( $post ) ? $post->ID : 0;
+				$is_active = false;
+				
+				// Intentar obtener las variables del contexto
+				if ( function_exists( 'tutor_utils' ) && $lesson_id ) {
+					$course_id = tutor_utils()->get_course_id_by_content( $lesson_id );
+				}
+				
+				// Obtener el active_tab de la URL
+				$active_tab = isset( $_GET['page_tab'] ) ? sanitize_text_field( $_GET['page_tab'] ) : '';
+				$is_active = ( $active_tab === 'other-files' );
+				
+				$variables = array(
+					'is_active' => $is_active,
+					'post'      => $post,
+					'course_id' => $course_id,
+					'lesson_id' => $lesson_id,
+				);
+				
+				// Extraer variables para el template
+				extract( $variables );
+				
+				// Cargar el template
+				include $plugin_template;
+			}
+		}
+	}
+	
+	/**
+	 * Asegurar que el template se cargue correctamente
+	 */
+	public function ensure_template_loaded( $template, $variables ) {
+		// Si el template es de nuestro plugin, verificar que se cargó
+		if ( strpos( $template, 'tutor-course-resources' ) !== false ) {
+			// El template viene con puntos, convertirlos a separadores de directorio
+			$template_file = str_replace( '.', DIRECTORY_SEPARATOR, $template );
+			$template_file = str_replace( 'tutor-course-resources' . DIRECTORY_SEPARATOR, '', $template_file );
+			$plugin_template = TUTOR_COURSE_RESOURCES_PLUGIN_DIR . 'templates' . DIRECTORY_SEPARATOR . $template_file . '.php';
+			$plugin_template = str_replace( array( '/', '\\' ), DIRECTORY_SEPARATOR, $plugin_template );
+			
+			// Si el archivo existe en nuestro plugin, cargarlo directamente
+			if ( file_exists( $plugin_template ) ) {
+				// Extraer variables
+				extract( $variables );
+				
+				// Cargar el template directamente
+				include $plugin_template;
+			}
+		}
+	}
+	
+	/**
+	 * Ocultar mensaje de error si el template existe en nuestro plugin
+	 */
+	public function hide_template_error_if_exists( $warning_msg ) {
+		// Si el mensaje es sobre nuestro template, verificar si existe en nuestro plugin
+		if ( preg_match( '/tutor-course-resources/', $warning_msg ) ) {
+			// Construir la ruta del template en nuestro plugin
+			$plugin_template = TUTOR_COURSE_RESOURCES_PLUGIN_DIR . 'templates' . DIRECTORY_SEPARATOR . 'single' . DIRECTORY_SEPARATOR . 'lesson' . DIRECTORY_SEPARATOR . 'parts' . DIRECTORY_SEPARATOR . 'other-files.php';
+			$plugin_template = str_replace( array( '/', '\\' ), DIRECTORY_SEPARATOR, $plugin_template );
+			
+			// Si el archivo existe en nuestro plugin, ocultar el error
+			if ( file_exists( $plugin_template ) ) {
+				return ''; // Devolver string vacío para ocultar el error
+			}
+		}
+		
+		return $warning_msg;
 	}
 	
 	/**
@@ -1503,7 +1889,9 @@ class Tutor_Course_Resources {
 	
 	/**
 	 * Agregar menú de recursos al dashboard de estudiante
+	 * DESHABILITADO: Los estudiantes verán los recursos desde las clases del curso
 	 */
+	/*
 	public function add_student_resources_menu( $nav_items ) {
 		// Solo para estudiantes
 		if ( ! is_user_logged_in() ) {
@@ -1532,6 +1920,7 @@ class Tutor_Course_Resources {
 		
 		return $nav_items;
 	}
+	*/
 	
 	/**
 	 * Cargar templates del dashboard
@@ -1547,13 +1936,17 @@ class Tutor_Course_Resources {
 			if ( file_exists( $template_file ) ) {
 				return $template_file;
 			}
-		} elseif ( $dashboard_page === 'my-resources' ) {
+		}
+		// Template my-resources deshabilitado - los estudiantes ven recursos desde las clases del curso
+		/*
+		elseif ( $dashboard_page === 'my-resources' ) {
 			// Template para estudiantes
 			$template_file = TUTOR_COURSE_RESOURCES_PLUGIN_DIR . 'templates/dashboard/resources-student.php';
 			if ( file_exists( $template_file ) ) {
 				return $template_file;
 			}
 		}
+		*/
 		
 		return $location;
 	}
@@ -1744,15 +2137,82 @@ class Tutor_Course_Resources {
 		}
 		
 		// Acceso de docentes
-		if ( $is_instructor && $folder->access_teachers ) {
-			$allowed_teachers = ! empty( $folder->access_teachers_list ) ? explode( ',', $folder->access_teachers_list ) : array();
-			
-			if ( empty( $folder->access_teachers_list ) ) {
+		if ( $is_instructor ) {
+			// Si el docente es el creador de la carpeta, siempre tiene acceso
+			if ( $folder->created_by == $user_id ) {
 				return true;
 			}
 			
-			if ( in_array( $user_id, $allowed_teachers ) || $folder->created_by == $user_id ) {
-				return true;
+			// Si la carpeta tiene un curso asociado, verificar que el docente sea instructor de ese curso
+			if ( $folder->course_id > 0 ) {
+				$is_course_instructor = false;
+				
+				// Verificar si es el autor principal del curso
+				$course = get_post( $folder->course_id );
+				if ( $course && $course->post_author == $user_id ) {
+					$is_course_instructor = true;
+				}
+				
+				// Verificar si es co-instructor usando Tutor LMS
+				if ( ! $is_course_instructor && function_exists( 'tutor_utils' ) ) {
+					$is_course_instructor = tutor_utils()->is_instructor_of_this_course( $user_id, $folder->course_id );
+				}
+				
+				// Si no es instructor del curso, no tiene acceso (a menos que esté en la lista de docentes permitidos)
+				if ( ! $is_course_instructor ) {
+					// Verificar si tiene acceso específico mediante access_teachers
+					if ( $folder->access_teachers ) {
+						$allowed_teachers = ! empty( $folder->access_teachers_list ) ? explode( ',', $folder->access_teachers_list ) : array();
+						
+						// Si la lista está vacía y access_teachers está activo, no dar acceso automático
+						// Solo dar acceso si está explícitamente en la lista
+						if ( ! empty( $folder->access_teachers_list ) && in_array( $user_id, array_map( 'intval', $allowed_teachers ) ) ) {
+							return true;
+						}
+					}
+					return false;
+				}
+				
+				// Si es instructor del curso, verificar permisos de acceso de docentes
+				if ( $folder->access_teachers ) {
+					$allowed_teachers = ! empty( $folder->access_teachers_list ) ? explode( ',', $folder->access_teachers_list ) : array();
+					
+					// Si la lista está vacía, todos los instructores del curso tienen acceso
+					if ( empty( $folder->access_teachers_list ) ) {
+						return true;
+					}
+					
+					// Si hay lista, verificar que esté en ella
+					if ( in_array( $user_id, array_map( 'intval', $allowed_teachers ) ) ) {
+						return true;
+					}
+					
+					// Si no está en la lista, no tiene acceso
+					return false;
+				}
+				
+				// Si access_teachers está desactivado, el instructor del curso no tiene acceso
+				return false;
+			}
+			
+			// Si la carpeta es libre (sin curso), verificar acceso de docentes
+			if ( $folder->is_libre ) {
+				if ( $folder->access_teachers ) {
+					$allowed_teachers = ! empty( $folder->access_teachers_list ) ? explode( ',', $folder->access_teachers_list ) : array();
+					
+					// Si la lista está vacía, todos los docentes tienen acceso
+					if ( empty( $folder->access_teachers_list ) ) {
+						return true;
+					}
+					
+					// Si hay lista, verificar que esté en ella
+					if ( in_array( $user_id, array_map( 'intval', $allowed_teachers ) ) ) {
+						return true;
+					}
+				}
+				
+				// Si access_teachers está desactivado o no está en la lista, no tiene acceso
+				return false;
 			}
 		}
 		

@@ -1,11 +1,11 @@
 <?php
 /**
  * Plugin Name: Tutor Attendance Calendar
- * Plugin URI: https://example.com
+ * Plugin URI: https://www.emr.codes
  * Description: Sistema de gestión de asistencia por curso con calendario para Tutor LMS
  * Version: 1.0.0
- * Author: Tu Nombre
- * Author URI: https://example.com
+ * Author: EMR CODES
+ * Author URI: https://www.emr.codes
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: tutor-attendance-calendar

@@ -27,8 +27,52 @@ if ( $is_admin ) {
 } else {
 	// Obtener cursos donde es instructor
 	$courses = array();
-	if ( function_exists( 'Tutor\Models\CourseModel' ) ) {
+	
+	// Intentar usar el método del plugin primero
+	if ( method_exists( $plugin, 'get_instructor_courses' ) ) {
+		$courses = $plugin->get_instructor_courses( $user_id );
+	}
+	
+	// Si no hay cursos, intentar método directo de Tutor LMS
+	if ( empty( $courses ) && class_exists( '\Tutor\Models\CourseModel' ) ) {
 		$courses = \Tutor\Models\CourseModel::get_courses_by_instructor( $user_id, 'publish', 0, 0, false, array( tutor()->course_post_type ) );
+	}
+	
+	// Si aún no hay cursos, intentar método alternativo
+	if ( empty( $courses ) && function_exists( 'tutor' ) ) {
+		$args = array(
+			'post_type' => tutor()->course_post_type,
+			'post_status' => 'publish',
+			'author' => $user_id,
+			'posts_per_page' => -1,
+			'orderby' => 'title',
+			'order' => 'ASC',
+		);
+		$courses = get_posts( $args );
+	}
+	
+	// Convertir a objetos WP_Post si es necesario
+	if ( ! empty( $courses ) && is_array( $courses ) ) {
+		$wp_posts = array();
+		foreach ( $courses as $course ) {
+			if ( is_object( $course ) && isset( $course->ID ) ) {
+				// Ya es un objeto con ID, obtener el post completo
+				$post = get_post( $course->ID );
+				if ( $post ) {
+					$wp_posts[] = $post;
+				}
+			} elseif ( is_numeric( $course ) ) {
+				// Es solo un ID
+				$post = get_post( $course );
+				if ( $post ) {
+					$wp_posts[] = $post;
+				}
+			} elseif ( is_object( $course ) && isset( $course->post_type ) ) {
+				// Ya es un WP_Post
+				$wp_posts[] = $course;
+			}
+		}
+		$courses = array_filter( $wp_posts ); // Eliminar nulls
 	}
 }
 
@@ -139,6 +183,24 @@ foreach ( $resources as $resource ) {
 						$course = get_post( $folder->course_id );
 						$course_name = $course ? $course->post_title : '';
 					}
+					
+					// Obtener información del creador
+					$creator = null;
+					$creator_name = '';
+					$creator_email = '';
+					if ( ! empty( $folder->created_by ) ) {
+						$creator = get_userdata( $folder->created_by );
+						if ( $creator ) {
+							$creator_name = $creator->display_name ? $creator->display_name : $creator->user_login;
+							$creator_email = $creator->user_email;
+						}
+					}
+					
+					// Formatear fecha de creación
+					$created_date = '';
+					if ( ! empty( $folder->created_at ) ) {
+						$created_date = date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $folder->created_at ) );
+					}
 				?>
 					<div class="drive-item folder-item" data-item-id="<?php echo esc_attr( $folder->id ); ?>" data-item-type="folder">
 						<div class="item-checkbox" style="display: none;">
@@ -150,15 +212,24 @@ foreach ( $resources as $resource ) {
 						<div class="item-name" title="<?php echo esc_attr( $folder->name ); ?>">
 							<?php echo esc_html( $folder->name ); ?>
 						</div>
-						<?php if ( $course_name ) : ?>
-							<div class="item-meta">
+						<div class="item-meta">
+							<?php if ( $course_name ) : ?>
 								<span class="course-badge"><?php echo esc_html( $course_name ); ?></span>
-							</div>
-						<?php elseif ( $folder->is_libre ) : ?>
-							<div class="item-meta">
+							<?php elseif ( $folder->is_libre ) : ?>
 								<span class="libre-badge"><?php esc_html_e( 'Libre', 'tutor-course-resources' ); ?></span>
-							</div>
-						<?php endif; ?>
+							<?php endif; ?>
+							<?php if ( $creator_name ) : ?>
+								<span class="creator-info" title="<?php echo esc_attr( sprintf( __( 'Creado por: %s (%s)', 'tutor-course-resources' ), $creator_name, $creator_email ) ); ?>" style="margin-left: 8px; color: #666; font-size: 12px;">
+									<span class="dashicons dashicons-admin-users" style="font-size: 14px; vertical-align: middle;"></span>
+									<?php echo esc_html( $creator_name ); ?>
+								</span>
+							<?php endif; ?>
+							<?php if ( $created_date ) : ?>
+								<span class="created-date" style="margin-left: 8px; color: #999; font-size: 11px;">
+									<?php echo esc_html( $created_date ); ?>
+								</span>
+							<?php endif; ?>
+						</div>
 						<div class="item-actions">
 							<a href="<?php echo esc_url( $folder_url ); ?>" class="item-action" title="<?php esc_attr_e( 'Abrir', 'tutor-course-resources' ); ?>">
 								<span class="dashicons dashicons-visibility"></span>
@@ -204,6 +275,35 @@ foreach ( $resources as $resource ) {
 					}
 					
 					if ( empty( $file_url ) ) continue;
+					
+					// Obtener información del creador
+					$creator = null;
+					$creator_name = '';
+					$creator_email = '';
+					if ( ! empty( $resource->created_by ) ) {
+						$creator = get_userdata( $resource->created_by );
+						if ( $creator ) {
+							$creator_name = $creator->display_name ? $creator->display_name : $creator->user_login;
+							$creator_email = $creator->user_email;
+						}
+					}
+					
+					// Formatear fecha de creación
+					$created_date = '';
+					if ( ! empty( $resource->created_at ) ) {
+						$created_date = date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $resource->created_at ) );
+					}
+					
+					// Obtener tamaño del archivo
+					$file_size = '';
+					if ( $resource->file_id ) {
+						$file_path = get_attached_file( $resource->file_id );
+						if ( $file_path && file_exists( $file_path ) ) {
+							$file_size = size_format( filesize( $file_path ) );
+						}
+					} elseif ( $resource->resource_type === 'drive' ) {
+						$file_size = __( 'Enlace externo', 'tutor-course-resources' );
+					}
 				?>
 					<div class="drive-item file-item" data-item-id="<?php echo esc_attr( $resource->id ); ?>" data-item-type="resource">
 						<div class="item-checkbox" style="display: none;">
@@ -216,16 +316,20 @@ foreach ( $resources as $resource ) {
 							<?php echo esc_html( $resource->title ); ?>
 						</div>
 						<div class="item-meta">
-							<span class="file-size">
-								<?php 
-								if ( $resource->file_id ) {
-									$file_path = get_attached_file( $resource->file_id );
-									if ( $file_path && file_exists( $file_path ) ) {
-										echo esc_html( size_format( filesize( $file_path ) ) );
-									}
-								}
-								?>
-							</span>
+							<?php if ( $file_size ) : ?>
+								<span class="file-size"><?php echo esc_html( $file_size ); ?></span>
+							<?php endif; ?>
+							<?php if ( $creator_name ) : ?>
+								<span class="creator-info" title="<?php echo esc_attr( sprintf( __( 'Creado por: %s (%s)', 'tutor-course-resources' ), $creator_name, $creator_email ) ); ?>" style="margin-left: 8px; color: #666; font-size: 12px;">
+									<span class="dashicons dashicons-admin-users" style="font-size: 14px; vertical-align: middle;"></span>
+									<?php echo esc_html( $creator_name ); ?>
+								</span>
+							<?php endif; ?>
+							<?php if ( $created_date ) : ?>
+								<span class="created-date" style="margin-left: 8px; color: #999; font-size: 11px;">
+									<?php echo esc_html( $created_date ); ?>
+								</span>
+							<?php endif; ?>
 						</div>
 						<div class="item-actions">
 							<a href="<?php echo esc_url( $file_url ); ?>" target="_blank" class="item-action" title="<?php esc_attr_e( 'Abrir', 'tutor-course-resources' ); ?>">
@@ -313,18 +417,37 @@ foreach ( $resources as $resource ) {
 					<label for="folder-course-id"><?php esc_html_e( 'Asociar a Curso', 'tutor-course-resources' ); ?></label>
 					<select id="folder-course-id" class="tutor-form-control">
 						<option value="0"><?php esc_html_e( 'Carpeta Libre (sin curso)', 'tutor-course-resources' ); ?></option>
-						<?php if ( ! empty( $courses ) ) : ?>
+						<?php if ( ! empty( $courses ) && is_array( $courses ) ) : ?>
 							<?php foreach ( $courses as $course ) : 
-								$course_id = is_object( $course ) ? $course->ID : ( is_numeric( $course ) ? $course : 0 );
-								$course_title = is_object( $course ) ? $course->post_title : get_the_title( $course_id );
+								$course_id = 0;
+								$course_title = '';
+								
+								if ( is_object( $course ) && isset( $course->ID ) ) {
+									$course_id = intval( $course->ID );
+									$course_title = isset( $course->post_title ) ? $course->post_title : get_the_title( $course_id );
+								} elseif ( is_numeric( $course ) ) {
+									$course_id = intval( $course );
+									$course_title = get_the_title( $course_id );
+								}
+								
+								if ( $course_id > 0 && ! empty( $course_title ) ) :
 							?>
 								<option value="<?php echo esc_attr( $course_id ); ?>">
 									<?php echo esc_html( $course_title ); ?>
 								</option>
-							<?php endforeach; ?>
+							<?php 
+								endif;
+							endforeach; ?>
+						<?php else : ?>
+							<option value="0" disabled><?php esc_html_e( 'No hay cursos disponibles', 'tutor-course-resources' ); ?></option>
 						<?php endif; ?>
 					</select>
 					<p class="description"><?php esc_html_e( 'Selecciona un curso o déjalo libre para usar en cualquier curso.', 'tutor-course-resources' ); ?></p>
+					<?php if ( empty( $courses ) || ! is_array( $courses ) ) : ?>
+						<p class="description" style="color: #d63638;">
+							<?php esc_html_e( 'No se encontraron cursos. Asegúrate de que eres instructor de al menos un curso.', 'tutor-course-resources' ); ?>
+						</p>
+					<?php endif; ?>
 				</div>
 				
 				<div class="form-group">
@@ -478,15 +601,6 @@ foreach ( $resources as $resource ) {
 				<p class="description"><?php esc_html_e( 'Mantén presionada la tecla Ctrl (Cmd en Mac) para seleccionar múltiples lecciones.', 'tutor-course-resources' ); ?></p>
 			</div>
 			
-			<!-- Campo para seleccionar múltiples lecciones en enlace Drive -->
-			<div class="form-group" id="link-lessons-wrapper">
-				<label for="link-lesson-ids"><?php esc_html_e( 'Asociar a Lecciones (opcional)', 'tutor-course-resources' ); ?></label>
-				<p class="description"><?php esc_html_e( 'Selecciona las lecciones donde este enlace estará disponible. Si no seleccionas ninguna, heredará las lecciones de la carpeta padre (si tiene).', 'tutor-course-resources' ); ?></p>
-				<select id="link-lesson-ids" multiple class="tutor-form-control" style="min-height: 150px;">
-					<!-- Las lecciones se cargarán dinámicamente mediante JavaScript -->
-				</select>
-				<p class="description"><?php esc_html_e( 'Mantén presionada la tecla Ctrl (Cmd en Mac) para seleccionar múltiples lecciones.', 'tutor-course-resources' ); ?></p>
-			</div>
 			<script>
 			jQuery(document).ready(function($) {
 				// Ocultar los campos de lecciones inicialmente
@@ -622,7 +736,24 @@ foreach ( $resources as $resource ) {
 						<?php echo esc_html( $link_parent_course_name ); ?>
 						<input type="hidden" id="link-course-id" value="<?php echo esc_attr( $link_parent_course_id ); ?>">
 					</div>
+					<p class="description"><?php esc_html_e( 'Este enlace heredará automáticamente el curso de la carpeta padre.', 'tutor-course-resources' ); ?></p>
 				</div>
+				<script>
+				jQuery(document).ready(function($) {
+					// Cargar lecciones cuando se herede el curso de la carpeta padre
+					var parentCourseId = <?php echo esc_js( $link_parent_course_id ); ?>;
+					if (parentCourseId > 0) {
+						// Cargar lecciones cuando se abra el modal (usar evento personalizado o timeout)
+						$(document).on('click', '#add-drive-link-btn', function() {
+							setTimeout(function() {
+								if (typeof loadLessonsForCourse === 'function') {
+									loadLessonsForCourse(parentCourseId, 'link-lesson-ids', []);
+								}
+							}, 500);
+						});
+					}
+				});
+				</script>
 			<?php else : ?>
 				<!-- Si no hay carpeta padre con curso, permitir seleccionar -->
 				<div class="form-group">
@@ -647,6 +778,16 @@ foreach ( $resources as $resource ) {
 			<div class="form-group">
 				<label for="link-url"><?php esc_html_e( 'URL de Google Drive', 'tutor-course-resources' ); ?> <span class="required">*</span></label>
 				<input type="url" id="link-url" class="tutor-form-control" placeholder="https://drive.google.com/..." required>
+			</div>
+			
+			<!-- Campo para seleccionar múltiples lecciones en enlace Drive -->
+			<div class="form-group" id="link-lessons-wrapper" style="display: none;">
+				<label for="link-lesson-ids"><?php esc_html_e( 'Asociar a Lecciones (opcional)', 'tutor-course-resources' ); ?></label>
+				<p class="description"><?php esc_html_e( 'Selecciona las lecciones donde este enlace estará disponible. Si no seleccionas ninguna, heredará las lecciones de la carpeta padre (si tiene).', 'tutor-course-resources' ); ?></p>
+				<select id="link-lesson-ids" multiple class="tutor-form-control" style="min-height: 150px;">
+					<!-- Las lecciones se cargarán dinámicamente mediante JavaScript -->
+				</select>
+				<p class="description"><?php esc_html_e( 'Mantén presionada la tecla Ctrl (Cmd en Mac) para seleccionar múltiples lecciones.', 'tutor-course-resources' ); ?></p>
 			</div>
 			
 			<div class="form-group">
